@@ -3,7 +3,7 @@ version: '3'
 services:
   crowdhealth:
     image: apache/zeppelin:0.9.0
-    container_name: "siem-interactive-notebook"
+    container_name: "interactive-notebook"
     ports:
       - "9080:8080"
       - "4040:4040"
