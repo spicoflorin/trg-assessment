@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  crowdhealth:
+    image: apache/zeppelin:0.9.0
+    container_name: "siem-interactive-notebook"
+    ports:
+      - "9080:8080"
+      - "4040:4040"
+    volumes:
+      - ./resources/notebook:/notebook
+      - ./resources/data:/data
+      #- /media/sf_input-data:/data
+    environment:
+      - ZEPPELIN_NOTEBOOK_DIR=/notebook
+    restart: always
+

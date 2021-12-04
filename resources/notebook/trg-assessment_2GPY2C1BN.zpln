@@ -1,0 +1,710 @@
+{
+  "paragraphs": [
+    {
+      "text": "%spark\n\nimport org.apache.spark.sql.functions.input_file_name\nimport org.apache.spark.sql.SaveMode\n\n\n/**\n * Loading the crime data from street files such as 2019-06-avon-and-somerset-street.csv \n */\n\n//read the crimes data from the street files. Include the name of the file\nval iniDfCrime \u003d spark.read.option(\"delimiter\",\",\")\n      .option(\"header\",\"true\").csv(\"/data/*/*street.csv\")\n\n//Include the name of the file in Dataframe\nval dfCrime\u003diniDfCrime.withColumn(\"filename\", input_file_name())\n\n\n//create a view in order to use the SQL \ndfCrime.createOrReplaceTempView(\"dcrime\")\n\n//Select only the need it fields crimeId districtName latitude longitude crimeType lastOutcome\nval projDFCrime \u003d spark.sql(\"select `Crime id` as crimeId,ltrim(regexp_replace(regexp_extract(filename,\u0027([a-zA-Z]+-)+\u0027,0),\u0027-\u0027,\u0027 \u0027)) as districtName ,Latitude as latitude, Longitude as longitude, `Crime Type` as crimeType, `Last outcome category` as lastOutcome from dcrime\")\n\n//create a view in order to use the SQL \nprojDFCrime.createOrReplaceTempView(\"crime\")\n\n//debug\nprojDFCrime.printSchema()\n\n/**\n * Loading the outcomes crime data from outcomes files such as 2019-06-avon-and-somerset-outcomes.csv \n */\n\n//reading data\nval outcomeDF \u003d spark.read.option(\"delimiter\",\",\")\n      .option(\"header\",\"true\").csv(\"/data/*/*outcomes.csv\")\n\noutcomeDF.createOrReplaceTempView(\"outcome\")\n\n\n/**\n *   Create the required dataframe \n *   with header crimeId|districtName|latitude|longitude|crimeType|lastOutcome\n *  \n * Observation. There are some crimeID in the street files data are not in the outcomes, as weel as crimeId that are in the outcomes files but they are not in the street files.\n * In order to obatain all the crimes, we need to do a full outer join between the two datasets.\n */\n \nval joinedCrimeDF \u003d spark.sql(\"select distinct (case when o.`Crime id` is NOT null THEN o.`Crime id` ELSE c.crimeId END)  as crimeId, c.districtName, c.latitude, c.longitude, c.crimeType, (case when o.`Crime id` is NOT null  THEN o.`Outcome type` ELSE c.lastOutcome end) as lastOutcome from outcome o FULL JOIN crime c ON o.`Crime id` \u003d c.crimeId\" )\n\n//debug\njoinedCrimeDF.printSchema()\n//joinedCrimeDF.show()\n\n//save the data in parquet file\njoinedCrimeDF.write.mode(SaveMode.Overwrite).parquet(\"/data/output/police-data-consolidated.parquet\")\n\n",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-04 15:16:27.626",
+      "progress": 100,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "root\n |-- crimeId: string (nullable \u003d true)\n |-- districtName: string (nullable \u003d false)\n |-- latitude: string (nullable \u003d true)\n |-- longitude: string (nullable \u003d true)\n |-- crimeType: string (nullable \u003d true)\n |-- lastOutcome: string (nullable \u003d true)\n\nroot\n |-- crimeId: string (nullable \u003d true)\n |-- districtName: string (nullable \u003d true)\n |-- latitude: string (nullable \u003d true)\n |-- longitude: string (nullable \u003d true)\n |-- crimeType: string (nullable \u003d true)\n |-- lastOutcome: string (nullable \u003d true)\n\nimport org.apache.spark.sql.functions.input_file_name\nimport org.apache.spark.sql.SaveMode\n\u001b[1m\u001b[34miniDfCrime\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.DataFrame\u001b[0m \u003d [Crime ID: string, Month: string ... 10 more fields]\n\u001b[1m\u001b[34mdfCrime\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.DataFrame\u001b[0m \u003d [Crime ID: string, Month: string ... 11 more fields]\n\u001b[1m\u001b[34mprojDFCrime\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.DataFrame\u001b[0m \u003d [crimeId: string, districtName: string ... 4 more fields]\n\u001b[1m\u001b[34moutcomeDF\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.DataFrame\u001b[0m \u003d [Crime ID: string, Month: string ... 8 more fields]\n\u001b[1m\u001b[34mjoinedCrimeDF\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.DataFrame\u001b[0m \u003d [crimeId: string, districtName: string ... 4 more fields]\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://ed62166b77b4:4040/jobs/job?id\u003d8"
+            },
+            {
+              "jobUrl": "http://ed62166b77b4:4040/jobs/job?id\u003d9"
+            },
+            {
+              "jobUrl": "http://ed62166b77b4:4040/jobs/job?id\u003d10"
+            },
+            {
+              "jobUrl": "http://ed62166b77b4:4040/jobs/job?id\u003d11"
+            },
+            {
+              "jobUrl": "http://ed62166b77b4:4040/jobs/job?id\u003d12"
+            },
+            {
+              "jobUrl": "http://ed62166b77b4:4040/jobs/job?id\u003d13"
+            },
+            {
+              "jobUrl": "http://ed62166b77b4:4040/jobs/job?id\u003d14"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1638628845147_1939037394",
+      "id": "paragraph_1638521494003_1453480430",
+      "dateCreated": "2021-12-04 14:40:45.147",
+      "dateStarted": "2021-12-04 15:16:27.867",
+      "dateFinished": "2021-12-04 15:24:43.817",
+      "status": "FINISHED"
+    },
+    {
+      "text": "%spark\n// Read in the parquet file created aboveF\n    // Parquet files are self-describing so the schema is preserved\n    // The result of loading a Parquet file is also a DataFrame\n    val parquetFileDF \u003d spark.read.parquet(\"/data/output/police-data-consolidated.parquet\")\n\n//debug\n    parquetFileDF.show()\n//create temporary view in order to use SQL    \n    parquetFileDF.createOrReplaceTempView(\"pcrime\")",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-04 15:32:27.153",
+      "progress": 100,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "+--------------------+-------------------+---------+---------+--------------------+--------------------+\n|             crimeId|       districtName| latitude|longitude|           crimeType|         lastOutcome|\n+--------------------+-------------------+---------+---------+--------------------+--------------------+\n|000629b4cbc3b8f38...|       northumbria |55.182438|-1.646310|Violence and sexu...|     Suspect charged|\n|02f2554061444a91a...|    west yorkshire |53.690409|-1.485278|Violence and sexu...|Investigation com...|\n|039bce05044215fec...|devon and cornwall |50.385508|-4.157341|         Shoplifting|Investigation com...|\n|075a084c883bb2cd6...|      metropolitan |51.566843|-0.442485|Violence and sexu...|Investigation com...|\n|079c74ea2d450f416...|    west yorkshire |53.805465|-1.733718|               Drugs|    Local resolution|\n|07c757278e79c1400...|       northumbria |54.995234|-1.656851|         Other crime|Status update una...|\n|085338ba141db8656...|       west mercia |52.679486|-2.434062|         Other theft|Investigation com...|\n|09b6c9dc2ab58f282...|    west yorkshire |     null|     null|         Other theft|Investigation com...|\n|0ad9ddd8f380fcaa2...|            sussex |50.821497|-0.138654|Criminal damage a...|Investigation com...|\n|0c0a86f7990deca04...|      metropolitan |51.475122| 0.033301|         Other theft|Status update una...|\n|0cfd9315431a868e4...|       northumbria |54.950824|-1.600912|        Public order|Investigation com...|\n|0f6abfdf8f29086f1...|    cambridgeshire |52.329476|-0.183361|         Shoplifting|Unable to prosecu...|\n|10c740659902a46bd...|        lancashire |53.809316|-3.050843|Violence and sexu...|Investigation com...|\n|1279d977bccefd3d2...|     staffordshire |53.064943|-2.168527|Violence and sexu...|Action to be take...|\n|13f96d441e5a71d55...|      bedfordshire |51.880213|-0.417049|         Other theft|Investigation com...|\n|1443cec5c34391a62...|       northumbria |55.037883|-1.566704|         Other theft|Status update una...|\n|148dcf2e151bbe2b4...| avon and somerset |50.952636|-2.661199|        Public order|Awaiting court ou...|\n|156969343755a41b3...|          cheshire |53.283661|-2.901478|        Public order|Unable to prosecu...|\n|16ceb9a31c3017564...|      metropolitan |51.525516|-0.460905|Violence and sexu...|Court result unav...|\n|18d34a08536fa9c05...|        humberside |53.653462|-0.605165|Violence and sexu...|Unable to prosecu...|\n+--------------------+-------------------+---------+---------+--------------------+--------------------+\nonly showing top 20 rows\n\n\u001b[1m\u001b[34mparquetFileDF\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.DataFrame\u001b[0m \u003d [crimeId: string, districtName: string ... 4 more fields]\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://ed62166b77b4:4040/jobs/job?id\u003d20"
+            },
+            {
+              "jobUrl": "http://ed62166b77b4:4040/jobs/job?id\u003d21"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1638628845155_334147838",
+      "id": "paragraph_1638537562577_1854641691",
+      "dateCreated": "2021-12-04 14:40:45.155",
+      "dateStarted": "2021-12-04 15:31:54.004",
+      "dateFinished": "2021-12-04 15:31:56.451",
+      "status": "FINISHED"
+    },
+    {
+      "text": "%spark.sql\n--Provide KPIs (JSON structure) to relevant end-users that are examining crime statistics(e.g: different crimes, location hotspots, crimes by location, crimes by crimeTypes, etc). KPIs should be accessible in the same way as in task 3.\n\nselect distinct crimeType from pcrime where crimeType is not null \n",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-04 14:40:45.155",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "sql",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/sql",
+        "fontSize": 9.0,
+        "results": {
+          "0": {
+            "graph": {
+              "mode": "table",
+              "height": 300.0,
+              "optionOpen": false,
+              "setting": {
+                "table": {
+                  "tableGridState": {},
+                  "tableColumnTypeState": {
+                    "names": {
+                      "crimeType": "string"
+                    },
+                    "updated": false
+                  },
+                  "tableOptionSpecHash": "[{\"name\":\"useFilter\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable filter for columns\"},{\"name\":\"showPagination\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable pagination for better navigation\"},{\"name\":\"showAggregationFooter\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable a footer for displaying aggregated values\"}]",
+                  "tableOptionValue": {
+                    "useFilter": false,
+                    "showPagination": false,
+                    "showAggregationFooter": false
+                  },
+                  "updated": false,
+                  "initialized": false
+                },
+                "multiBarChart": {
+                  "rotate": {
+                    "degree": "-45"
+                  },
+                  "xLabelStatus": "default"
+                }
+              },
+              "commonSetting": {},
+              "keys": [
+                {
+                  "name": "crimeType",
+                  "index": 0.0,
+                  "aggr": "sum"
+                }
+              ],
+              "groups": [],
+              "values": []
+            },
+            "helium": {}
+          }
+        },
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TABLE",
+            "data": "crimeType\nBicycle theft\nPublic order\nDrugs\nOther crime\nRobbery\nCriminal damage and arson\nTheft from the person\nShoplifting\nBurglary\nOther theft\nPossession of weapons\nViolence and sexual offences\nVehicle crime\nAnti-social behaviour\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1638628845155_384223609",
+      "id": "paragraph_1638537612826_895585466",
+      "dateCreated": "2021-12-04 14:40:45.155",
+      "status": "READY"
+    },
+    {
+      "text": "%spark\n\n//Get all existing crime Types\n\nval cTypeJSON\u003dspark.sql(\"select distinct crimeType from pcrime where crimeType is not null\")\n\ncTypeJSON.toJSON.collect.mkString(\"[\", \",\" , \"]\" )\n",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-04 15:33:22.448",
+      "progress": 97,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "\u001b[1m\u001b[34mcTypeJSON\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.DataFrame\u001b[0m \u003d [crimeType: string]\n\u001b[1m\u001b[34mres6\u001b[0m: \u001b[1m\u001b[32mString\u001b[0m \u003d [{\"crimeType\":\"Bicycle theft\"},{\"crimeType\":\"Public order\"},{\"crimeType\":\"Drugs\"},{\"crimeType\":\"Other crime\"},{\"crimeType\":\"Robbery\"},{\"crimeType\":\"Criminal damage and arson\"},{\"crimeType\":\"Theft from the person\"},{\"crimeType\":\"Shoplifting\"},{\"crimeType\":\"Burglary\"},{\"crimeType\":\"Other theft\"},{\"crimeType\":\"Possession of weapons\"},{\"crimeType\":\"Violence and sexual offences\"},{\"crimeType\":\"Vehicle crime\"},{\"crimeType\":\"Anti-social behaviour\"}]\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://ed62166b77b4:4040/jobs/job?id\u003d17"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1638628845155_1424194221",
+      "id": "paragraph_1638538868361_1768465142",
+      "dateCreated": "2021-12-04 14:40:45.155",
+      "dateStarted": "2021-12-04 15:27:47.126",
+      "dateFinished": "2021-12-04 15:28:05.431",
+      "status": "FINISHED"
+    },
+    {
+      "text": "%spark.sql\n--The crimes types based on their occurences\nselect crimeType,count(crimeType) as cnt from (select distinct crimeType,crimeId from pcrime where crimeType is not null) group by crimeType order by cnt desc",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-04 15:37:00.320",
+      "progress": 100,
+      "config": {
+        "editorSetting": {
+          "language": "sql",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/sql",
+        "fontSize": 9.0,
+        "results": {
+          "0": {
+            "graph": {
+              "mode": "pieChart",
+              "height": 300.0,
+              "optionOpen": false,
+              "setting": {
+                "table": {
+                  "tableGridState": {},
+                  "tableColumnTypeState": {
+                    "names": {
+                      "crimeType": "string",
+                      "cnt": "string"
+                    },
+                    "updated": false
+                  },
+                  "tableOptionSpecHash": "[{\"name\":\"useFilter\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable filter for columns\"},{\"name\":\"showPagination\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable pagination for better navigation\"},{\"name\":\"showAggregationFooter\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable a footer for displaying aggregated values\"}]",
+                  "tableOptionValue": {
+                    "useFilter": false,
+                    "showPagination": false,
+                    "showAggregationFooter": false
+                  },
+                  "updated": false,
+                  "initialized": false
+                },
+                "multiBarChart": {
+                  "rotate": {
+                    "degree": "-45"
+                  },
+                  "xLabelStatus": "default"
+                },
+                "stackedAreaChart": {
+                  "rotate": {
+                    "degree": "-45"
+                  },
+                  "xLabelStatus": "default"
+                }
+              },
+              "commonSetting": {},
+              "keys": [
+                {
+                  "name": "crimeType",
+                  "index": 0.0,
+                  "aggr": "sum"
+                }
+              ],
+              "groups": [],
+              "values": [
+                {
+                  "name": "cnt",
+                  "index": 1.0,
+                  "aggr": "sum"
+                }
+              ]
+            },
+            "helium": {}
+          }
+        },
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TABLE",
+            "data": "crimeType\tcnt\nViolence and sexual offences\t2252188\nCriminal damage and arson\t654680\nOther theft\t608781\nVehicle crime\t551622\nPublic order\t517422\nBurglary\t468578\nShoplifting\t434449\nDrugs\t213492\nOther crime\t127592\nTheft from the person\t121412\nRobbery\t101800\nBicycle theft\t96195\nPossession of weapons\t56103\nAnti-social behaviour\t1\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://ed62166b77b4:4040/jobs/job?id\u003d22"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1638628845155_1667833421",
+      "id": "paragraph_1638540115878_1378699229",
+      "dateCreated": "2021-12-04 14:40:45.155",
+      "dateStarted": "2021-12-04 15:37:00.467",
+      "dateFinished": "2021-12-04 15:38:15.621",
+      "status": "FINISHED"
+    },
+    {
+      "text": "%spark\n//The crimes types based on their occurences\nval highestCTypeJSON\u003dspark.sql(\"select crimeType,count(crimeType) as cnt from (select distinct crimeType,crimeId from pcrime where crimeType is not null) group by crimeType order by cnt desc\")\n//highestCTypeJSON.show()\n//JSON representation\nval high\u003dhighestCTypeJSON.toJSON.collect.mkString(\"[\", \",\" , \"]\" )\nprint(high)",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-04 15:45:16.834",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "+--------------------+-------+\n|           crimeType|    cnt|\n+--------------------+-------+\n|Violence and sexu...|2252188|\n|Criminal damage a...| 654680|\n|         Other theft| 608781|\n|       Vehicle crime| 551622|\n|        Public order| 517422|\n|            Burglary| 468578|\n|         Shoplifting| 434449|\n|               Drugs| 213492|\n|         Other crime| 127592|\n|Theft from the pe...| 121412|\n|             Robbery| 101800|\n|       Bicycle theft|  96195|\n|Possession of wea...|  56103|\n|Anti-social behav...|      1|\n+--------------------+-------+\n\n[{\"crimeType\":\"Violence and sexual offences\",\"cnt\":2252188},{\"crimeType\":\"Criminal damage and arson\",\"cnt\":654680},{\"crimeType\":\"Other theft\",\"cnt\":608781},{\"crimeType\":\"Vehicle crime\",\"cnt\":551622},{\"crimeType\":\"Public order\",\"cnt\":517422},{\"crimeType\":\"Burglary\",\"cnt\":468578},{\"crimeType\":\"Shoplifting\",\"cnt\":434449},{\"crimeType\":\"Drugs\",\"cnt\":213492},{\"crimeType\":\"Other crime\",\"cnt\":127592},{\"crimeType\":\"Theft from the person\",\"cnt\":121412},{\"crimeType\":\"Robbery\",\"cnt\":101800},{\"crimeType\":\"Bicycle theft\",\"cnt\":96195},{\"crimeType\":\"Possession of weapons\",\"cnt\":56103},{\"crimeType\":\"Anti-social behaviour\",\"cnt\":1}]\u001b[1m\u001b[34mhighestCTypeJSON\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.DataFrame\u001b[0m \u003d [crimeType: string, cnt: bigint]\n\u001b[1m\u001b[34mhigh\u001b[0m: \u001b[1m\u001b[32mString\u001b[0m \u003d [{\"crimeType\":\"Violence and sexual offences\",\"cnt\":2252188},{\"crimeType\":\"Criminal damage and arson\",\"cnt\":654680},{\"crimeType\":\"Other theft\",\"cnt\":608781},{\"crimeType\":\"Vehicle crime\",\"cnt\":551622},{\"crimeType\":\"Public order\",\"cnt\":517422},{\"crimeType\":\"Burglary\",\"cnt\":468578},{\"crimeType\":\"Shoplifting\",\"cnt\":434449},{\"crimeType\":\"Drugs\",\"cnt\":213492},{\"crimeType\":\"Other crime\",\"cnt\":127592},{\"crimeType\":\"Theft from the person\",\"cnt\":121412},{\"crimeType\":\"Robbery\",\"cnt\":101800},{\"crimeType\":\"Bicycle theft\",\"cnt\":96195},{\"crimeType\":\"Possession of weapons\",\"cnt\":56103},{\"crimeType\":\"Anti-social behaviour\",\"cnt\":1}]\n"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1638628845155_945212732",
+      "id": "paragraph_1638539847152_657207186",
+      "dateCreated": "2021-12-04 14:40:45.155",
+      "status": "READY"
+    },
+    {
+      "text": "%spark\n//top 100 locations with the highest number of crimes\n\nval highestCTypeJSON\u003dspark.sql(\" select districtName, count(districtName) cnt,latitude,longitude from (select distinct districtName,latitude,longitude,crimeId from pcrime where latitude is not null and longitude is not null) group by districtName,latitude,longitude order by cnt desc limit 100 \")\n//highestCTypeJSON.show(100)\n\nval high\u003dhighestCTypeJSON.toJSON.collect.mkString(\"[\", \",\" , \"]\" )\nprint(high)",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-04 15:45:03.343",
+      "progress": 99,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "+-------------------+----+---------+---------+\n|       districtName| cnt| latitude|longitude|\n+-------------------+----+---------+---------+\n|      metropolitan |1979|51.547097|-0.009573|\n|      metropolitan |1683|51.541870|-0.002028|\n|      metropolitan |1296|51.471717|-0.490059|\n|      metropolitan |1286|51.576166|-0.224537|\n|      metropolitan |1233|51.514868|-0.153101|\n|      metropolitan |1185|51.516506|-0.131588|\n|              kent |1175|51.439243| 0.271160|\n|      metropolitan | 935|51.510051|-0.133971|\n|             essex | 890|51.889938| 0.261741|\n|       northumbria | 843|54.974308|-1.612740|\n|    west yorkshire | 828|53.758627|-1.574238|\n|greater manchester | 797|53.481250|-2.236341|\n|    west yorkshire | 757|53.788023|-1.752133|\n|greater manchester | 741|53.482225|-2.238637|\n|      metropolitan | 709|51.509369|-0.170573|\n|      metropolitan | 684|51.515333|-0.140385|\n|     west midlands | 655|52.453257|-1.717145|\n|      metropolitan | 652|51.515915|-0.131209|\n|      metropolitan | 651|51.469708|-0.451842|\n|      metropolitan | 636|51.510835|-0.128996|\n|   nottinghamshire | 635|52.953187|-1.149045|\n|             essex | 629|51.544690| 0.709743|\n|        merseyside | 626|53.403914|-2.981499|\n|   gloucestershire | 620|51.864840|-2.246253|\n|      metropolitan | 620|51.508577|-0.124419|\n|   nottinghamshire | 619|52.948097|-1.150053|\n|     west midlands | 614|52.477784|-1.893786|\n|      metropolitan | 609|51.594677|-0.107953|\n|    west yorkshire | 601|53.774124|-1.574612|\n|      metropolitan | 590|51.403891| 0.016567|\n|            sussex | 588|51.155990|-0.163049|\n|   nottinghamshire | 586|52.955945|-1.147591|\n|      metropolitan | 583|51.509922|-0.223511|\n|      metropolitan | 577|51.539681|-0.142998|\n|     west midlands | 577|52.452023|-1.735679|\n|      metropolitan | 562|51.504848|-0.090033|\n|    west yorkshire | 555|53.797009|-1.543274|\n|       south wales | 553|51.481140|-3.179290|\n|              kent | 551|51.273404| 0.486383|\n|  northern ireland | 545|54.693210|-6.192086|\n|       northumbria | 539|54.972264|-1.617134|\n|      metropolitan | 538|51.526507|-0.079338|\n|      metropolitan | 536|51.513474|-0.129824|\n|      metropolitan | 536|51.510827|-0.130697|\n| avon and somerset | 528|51.525158|-2.595371|\n|      metropolitan | 521|51.609953|-0.048550|\n|            sussex | 518|51.161119|-0.177591|\n|         cleveland | 514|54.580304|-1.236892|\n|      metropolitan | 514|51.510856|-0.131416|\n|     west midlands | 514|52.413883|-1.973066|\n|            sussex | 513|50.823156|-0.141214|\n|             essex | 508|51.571868| 0.456169|\n|   south yorkshire | 506|53.525912|-1.145848|\n|   nottinghamshire | 505|52.957890|-1.148030|\n|      metropolitan | 498|51.501729| 0.003103|\n|   south yorkshire | 493|53.544268|-0.970162|\n|             essex | 492|51.736629| 0.473830|\n|      metropolitan | 483|51.577473| 0.182166|\n|      bedfordshire | 483|51.880683|-0.375044|\n|             essex | 482|51.731744| 0.475214|\n|     west midlands | 479|52.480169|-1.896092|\n|      metropolitan | 475|51.499584|-0.163041|\n|   nottinghamshire | 474|52.955473|-1.145710|\n|       northumbria | 472|54.971249|-1.614472|\n|    leicestershire | 471|52.636250|-1.133691|\n|    west yorkshire | 468|53.796001|-1.542845|\n|      metropolitan | 465|51.511715|-0.128902|\n|     west midlands | 463|52.475571|-1.914403|\n|   nottinghamshire | 459|52.955238|-1.154274|\n|   south yorkshire | 458|53.522753|-1.131567|\n|    west yorkshire | 457|53.795910|-1.542527|\n|        merseyside | 457|53.403472|-2.980571|\n|             essex | 457|51.557871| 0.455025|\n|    west yorkshire | 456|53.793787|-1.748896|\n|      metropolitan | 449|51.510551|-0.132034|\n| avon and somerset | 444|51.457659|-2.586288|\n|      metropolitan | 440|51.509962|-0.131179|\n|   south yorkshire | 440|53.519960|-1.131941|\n|       south wales | 439|51.480314|-3.179139|\n|       northumbria | 437|54.972222|-1.615322|\n|  northamptonshire | 436|52.326464|-1.247705|\n|      metropolitan | 432|51.514538|-0.141282|\n|      metropolitan | 432|51.514619|-0.144161|\n|   nottinghamshire | 431|53.141332|-1.188611|\n|      metropolitan | 431|51.587120|-0.062030|\n|            dorset | 430|50.724615|-1.868775|\n|      metropolitan | 430|51.541641| 0.001899|\n|   south yorkshire | 429|53.382345|-1.472447|\n|   nottinghamshire | 428|52.954068|-1.146601|\n|   south yorkshire | 425|53.382418|-1.468492|\n|    city of london | 419|51.516814|-0.081620|\n|      metropolitan | 413|51.499502|-0.141245|\n|      metropolitan | 413|51.512984|-0.130680|\n| avon and somerset | 413|51.457808|-2.590766|\n|       west mercia | 412|52.384493|-2.250122|\n|         wiltshire | 412|51.561954|-1.785196|\n|              kent | 412|51.365275| 0.495193|\n|      metropolitan | 410|51.462737|-0.114552|\n|        derbyshire | 409|52.928154|-1.469846|\n|        merseyside | 409|53.404218|-2.987117|\n+-------------------+----+---------+---------+\n\n[{\"districtName\":\"metropolitan \",\"cnt\":1979,\"latitude\":\"51.547097\",\"longitude\":\"-0.009573\"},{\"districtName\":\"metropolitan \",\"cnt\":1683,\"latitude\":\"51.541870\",\"longitude\":\"-0.002028\"},{\"districtName\":\"metropolitan \",\"cnt\":1296,\"latitude\":\"51.471717\",\"longitude\":\"-0.490059\"},{\"districtName\":\"metropolitan \",\"cnt\":1286,\"latitude\":\"51.576166\",\"longitude\":\"-0.224537\"},{\"districtName\":\"metropolitan \",\"cnt\":1233,\"latitude\":\"51.514868\",\"longitude\":\"-0.153101\"},{\"districtName\":\"metropolitan \",\"cnt\":1185,\"latitude\":\"51.516506\",\"longitude\":\"-0.131588\"},{\"districtName\":\"kent \",\"cnt\":1175,\"latitude\":\"51.439243\",\"longitude\":\"0.271160\"},{\"districtName\":\"metropolitan \",\"cnt\":935,\"latitude\":\"51.510051\",\"longitude\":\"-0.133971\"},{\"districtName\":\"essex \",\"cnt\":890,\"latitude\":\"51.889938\",\"longitude\":\"0.261741\"},{\"districtName\":\"northumbria \",\"cnt\":843,\"latitude\":\"54.974308\",\"longitude\":\"-1.612740\"},{\"districtName\":\"west yorkshire \",\"cnt\":828,\"latitude\":\"53.758627\",\"longitude\":\"-1.574238\"},{\"districtName\":\"greater manchester \",\"cnt\":797,\"latitude\":\"53.481250\",\"longitude\":\"-2.236341\"},{\"districtName\":\"west yorkshire \",\"cnt\":757,\"latitude\":\"53.788023\",\"longitude\":\"-1.752133\"},{\"districtName\":\"greater manchester \",\"cnt\":741,\"latitude\":\"53.482225\",\"longitude\":\"-2.238637\"},{\"districtName\":\"metropolitan \",\"cnt\":709,\"latitude\":\"51.509369\",\"longitude\":\"-0.170573\"},{\"districtName\":\"metropolitan \",\"cnt\":684,\"latitude\":\"51.515333\",\"longitude\":\"-0.140385\"},{\"districtName\":\"west midlands \",\"cnt\":655,\"latitude\":\"52.453257\",\"longitude\":\"-1.717145\"},{\"districtName\":\"metropolitan \",\"cnt\":652,\"latitude\":\"51.515915\",\"longitude\":\"-0.131209\"},{\"districtName\":\"metropolitan \",\"cnt\":651,\"latitude\":\"51.469708\",\"longitude\":\"-0.451842\"},{\"districtName\":\"metropolitan \",\"cnt\":636,\"latitude\":\"51.510835\",\"longitude\":\"-0.128996\"},{\"districtName\":\"nottinghamshire \",\"cnt\":635,\"latitude\":\"52.953187\",\"longitude\":\"-1.149045\"},{\"districtName\":\"essex \",\"cnt\":629,\"latitude\":\"51.544690\",\"longitude\":\"0.709743\"},{\"districtName\":\"merseyside \",\"cnt\":626,\"latitude\":\"53.403914\",\"longitude\":\"-2.981499\"},{\"districtName\":\"gloucestershire \",\"cnt\":620,\"latitude\":\"51.864840\",\"longitude\":\"-2.246253\"},{\"districtName\":\"metropolitan \",\"cnt\":620,\"latitude\":\"51.508577\",\"longitude\":\"-0.124419\"},{\"districtName\":\"nottinghamshire \",\"cnt\":619,\"latitude\":\"52.948097\",\"longitude\":\"-1.150053\"},{\"districtName\":\"west midlands \",\"cnt\":614,\"latitude\":\"52.477784\",\"longitude\":\"-1.893786\"},{\"districtName\":\"metropolitan \",\"cnt\":609,\"latitude\":\"51.594677\",\"longitude\":\"-0.107953\"},{\"districtName\":\"west yorkshire \",\"cnt\":601,\"latitude\":\"53.774124\",\"longitude\":\"-1.574612\"},{\"districtName\":\"metropolitan \",\"cnt\":590,\"latitude\":\"51.403891\",\"longitude\":\"0.016567\"},{\"districtName\":\"sussex \",\"cnt\":588,\"latitude\":\"51.155990\",\"longitude\":\"-0.163049\"},{\"districtName\":\"nottinghamshire \",\"cnt\":586,\"latitude\":\"52.955945\",\"longitude\":\"-1.147591\"},{\"districtName\":\"metropolitan \",\"cnt\":583,\"latitude\":\"51.509922\",\"longitude\":\"-0.223511\"},{\"districtName\":\"metropolitan \",\"cnt\":577,\"latitude\":\"51.539681\",\"longitude\":\"-0.142998\"},{\"districtName\":\"west midlands \",\"cnt\":577,\"latitude\":\"52.452023\",\"longitude\":\"-1.735679\"},{\"districtName\":\"metropolitan \",\"cnt\":562,\"latitude\":\"51.504848\",\"longitude\":\"-0.090033\"},{\"districtName\":\"west yorkshire \",\"cnt\":555,\"latitude\":\"53.797009\",\"longitude\":\"-1.543274\"},{\"districtName\":\"south wales \",\"cnt\":553,\"latitude\":\"51.481140\",\"longitude\":\"-3.179290\"},{\"districtName\":\"kent \",\"cnt\":551,\"latitude\":\"51.273404\",\"longitude\":\"0.486383\"},{\"districtName\":\"northern ireland \",\"cnt\":545,\"latitude\":\"54.693210\",\"longitude\":\"-6.192086\"},{\"districtName\":\"northumbria \",\"cnt\":539,\"latitude\":\"54.972264\",\"longitude\":\"-1.617134\"},{\"districtName\":\"metropolitan \",\"cnt\":538,\"latitude\":\"51.526507\",\"longitude\":\"-0.079338\"},{\"districtName\":\"metropolitan \",\"cnt\":536,\"latitude\":\"51.513474\",\"longitude\":\"-0.129824\"},{\"districtName\":\"metropolitan \",\"cnt\":536,\"latitude\":\"51.510827\",\"longitude\":\"-0.130697\"},{\"districtName\":\"avon and somerset \",\"cnt\":528,\"latitude\":\"51.525158\",\"longitude\":\"-2.595371\"},{\"districtName\":\"metropolitan \",\"cnt\":521,\"latitude\":\"51.609953\",\"longitude\":\"-0.048550\"},{\"districtName\":\"sussex \",\"cnt\":518,\"latitude\":\"51.161119\",\"longitude\":\"-0.177591\"},{\"districtName\":\"cleveland \",\"cnt\":514,\"latitude\":\"54.580304\",\"longitude\":\"-1.236892\"},{\"districtName\":\"metropolitan \",\"cnt\":514,\"latitude\":\"51.510856\",\"longitude\":\"-0.131416\"},{\"districtName\":\"west midlands \",\"cnt\":514,\"latitude\":\"52.413883\",\"longitude\":\"-1.973066\"},{\"districtName\":\"sussex \",\"cnt\":513,\"latitude\":\"50.823156\",\"longitude\":\"-0.141214\"},{\"districtName\":\"essex \",\"cnt\":508,\"latitude\":\"51.571868\",\"longitude\":\"0.456169\"},{\"districtName\":\"south yorkshire \",\"cnt\":506,\"latitude\":\"53.525912\",\"longitude\":\"-1.145848\"},{\"districtName\":\"nottinghamshire \",\"cnt\":505,\"latitude\":\"52.957890\",\"longitude\":\"-1.148030\"},{\"districtName\":\"metropolitan \",\"cnt\":498,\"latitude\":\"51.501729\",\"longitude\":\"0.003103\"},{\"districtName\":\"south yorkshire \",\"cnt\":493,\"latitude\":\"53.544268\",\"longitude\":\"-0.970162\"},{\"districtName\":\"essex \",\"cnt\":492,\"latitude\":\"51.736629\",\"longitude\":\"0.473830\"},{\"districtName\":\"metropolitan \",\"cnt\":483,\"latitude\":\"51.577473\",\"longitude\":\"0.182166\"},{\"districtName\":\"bedfordshire \",\"cnt\":483,\"latitude\":\"51.880683\",\"longitude\":\"-0.375044\"},{\"districtName\":\"essex \",\"cnt\":482,\"latitude\":\"51.731744\",\"longitude\":\"0.475214\"},{\"districtName\":\"west midlands \",\"cnt\":479,\"latitude\":\"52.480169\",\"longitude\":\"-1.896092\"},{\"districtName\":\"metropolitan \",\"cnt\":475,\"latitude\":\"51.499584\",\"longitude\":\"-0.163041\"},{\"districtName\":\"nottinghamshire \",\"cnt\":474,\"latitude\":\"52.955473\",\"longitude\":\"-1.145710\"},{\"districtName\":\"northumbria \",\"cnt\":472,\"latitude\":\"54.971249\",\"longitude\":\"-1.614472\"},{\"districtName\":\"leicestershire \",\"cnt\":471,\"latitude\":\"52.636250\",\"longitude\":\"-1.133691\"},{\"districtName\":\"west yorkshire \",\"cnt\":468,\"latitude\":\"53.796001\",\"longitude\":\"-1.542845\"},{\"districtName\":\"metropolitan \",\"cnt\":465,\"latitude\":\"51.511715\",\"longitude\":\"-0.128902\"},{\"districtName\":\"west midlands \",\"cnt\":463,\"latitude\":\"52.475571\",\"longitude\":\"-1.914403\"},{\"districtName\":\"nottinghamshire \",\"cnt\":459,\"latitude\":\"52.955238\",\"longitude\":\"-1.154274\"},{\"districtName\":\"south yorkshire \",\"cnt\":458,\"latitude\":\"53.522753\",\"longitude\":\"-1.131567\"},{\"districtName\":\"west yorkshire \",\"cnt\":457,\"latitude\":\"53.795910\",\"longitude\":\"-1.542527\"},{\"districtName\":\"merseyside \",\"cnt\":457,\"latitude\":\"53.403472\",\"longitude\":\"-2.980571\"},{\"districtName\":\"essex \",\"cnt\":457,\"latitude\":\"51.557871\",\"longitude\":\"0.455025\"},{\"districtName\":\"west yorkshire \",\"cnt\":456,\"latitude\":\"53.793787\",\"longitude\":\"-1.748896\"},{\"districtName\":\"metropolitan \",\"cnt\":449,\"latitude\":\"51.510551\",\"longitude\":\"-0.132034\"},{\"districtName\":\"avon and somerset \",\"cnt\":444,\"latitude\":\"51.457659\",\"longitude\":\"-2.586288\"},{\"districtName\":\"metropolitan \",\"cnt\":440,\"latitude\":\"51.509962\",\"longitude\":\"-0.131179\"},{\"districtName\":\"south yorkshire \",\"cnt\":440,\"latitude\":\"53.519960\",\"longitude\":\"-1.131941\"},{\"districtName\":\"south wales \",\"cnt\":439,\"latitude\":\"51.480314\",\"longitude\":\"-3.179139\"},{\"districtName\":\"northumbria \",\"cnt\":437,\"latitude\":\"54.972222\",\"longitude\":\"-1.615322\"},{\"districtName\":\"northamptonshire \",\"cnt\":436,\"latitude\":\"52.326464\",\"longitude\":\"-1.247705\"},{\"districtName\":\"metropolitan \",\"cnt\":432,\"latitude\":\"51.514538\",\"longitude\":\"-0.141282\"},{\"districtName\":\"metropolitan \",\"cnt\":432,\"latitude\":\"51.514619\",\"longitude\":\"-0.144161\"},{\"districtName\":\"nottinghamshire \",\"cnt\":431,\"latitude\":\"53.141332\",\"longitude\":\"-1.188611\"},{\"districtName\":\"metropolitan \",\"cnt\":431,\"latitude\":\"51.587120\",\"longitude\":\"-0.062030\"},{\"districtName\":\"dorset \",\"cnt\":430,\"latitude\":\"50.724615\",\"longitude\":\"-1.868775\"},{\"districtName\":\"metropolitan \",\"cnt\":430,\"latitude\":\"51.541641\",\"longitude\":\"0.001899\"},{\"districtName\":\"south yorkshire \",\"cnt\":429,\"latitude\":\"53.382345\",\"longitude\":\"-1.472447\"},{\"districtName\":\"nottinghamshire \",\"cnt\":428,\"latitude\":\"52.954068\",\"longitude\":\"-1.146601\"},{\"districtName\":\"south yorkshire \",\"cnt\":425,\"latitude\":\"53.382418\",\"longitude\":\"-1.468492\"},{\"districtName\":\"city of london \",\"cnt\":419,\"latitude\":\"51.516814\",\"longitude\":\"-0.081620\"},{\"districtName\":\"metropolitan \",\"cnt\":413,\"latitude\":\"51.499502\",\"longitude\":\"-0.141245\"},{\"districtName\":\"metropolitan \",\"cnt\":413,\"latitude\":\"51.512984\",\"longitude\":\"-0.130680\"},{\"districtName\":\"avon and somerset \",\"cnt\":413,\"latitude\":\"51.457808\",\"longitude\":\"-2.590766\"},{\"districtName\":\"west mercia \",\"cnt\":412,\"latitude\":\"52.384493\",\"longitude\":\"-2.250122\"},{\"districtName\":\"wiltshire \",\"cnt\":412,\"latitude\":\"51.561954\",\"longitude\":\"-1.785196\"},{\"districtName\":\"kent \",\"cnt\":412,\"latitude\":\"51.365275\",\"longitude\":\"0.495193\"},{\"districtName\":\"metropolitan \",\"cnt\":410,\"latitude\":\"51.462737\",\"longitude\":\"-0.114552\"},{\"districtName\":\"derbyshire \",\"cnt\":409,\"latitude\":\"52.928154\",\"longitude\":\"-1.469846\"},{\"districtName\":\"merseyside \",\"cnt\":409,\"latitude\":\"53.404218\",\"longitude\":\"-2.987117\"}]\u001b[1m\u001b[34mhighestCTypeJSON\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.DataFrame\u001b[0m \u003d [districtName: string, cnt: bigint ... 2 more fields]\n\u001b[1m\u001b[34mhigh\u001b[0m: \u001b[1m\u001b[32mString\u001b[0m \u003d [{\"districtName\":\"metropolitan \",\"cnt\":1979,\"latitude\":\"51.547097\",\"longitude\":\"-0.009573\"},{\"districtName\":\"metropolitan \",\"cnt\":1683,\"latitude\":\"51.541870\",\"longitude\":\"-0.002028\"},{\"districtName\":\"metropolitan \",\"cnt\":1296,\"latitude\":\"51.471717\",\"longitude\":\"-0.490059\"},{\"districtName\":\"metropolitan \",\"cnt\":1286,\"latitude\":\"51.576166\",\"longitude\":\"-0.224537\"},{\"districtName\":\"metropolitan \",\"cnt\":1233,\"latitude\":\"51.514868\",\"longitude\":\"-0.153101\"},{\"districtName\":\"metropolitan \",\"cnt\":1185,\"latitude\":\"51.516506\",\"longitude\":\"-0.131588\"},{\"districtName\":\"kent \",\"cnt\":1175,\"latitude\":\"51.439243\",\"longitude\":\"0.27116..."
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://ed62166b77b4:4040/jobs/job?id\u003d23"
+            },
+            {
+              "jobUrl": "http://ed62166b77b4:4040/jobs/job?id\u003d24"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1638628845159_160956308",
+      "id": "paragraph_1638540287712_803721263",
+      "dateCreated": "2021-12-04 14:40:45.159",
+      "dateStarted": "2021-12-04 15:40:29.435",
+      "dateFinished": "2021-12-04 15:44:40.698",
+      "status": "FINISHED"
+    },
+    {
+      "text": "%spark\n//top 100 districts with the highest number of crimes\n\nval topDistrict\u003dspark.sql(\"select districtName, count(districtName) cnt from (select distinct districtName,crimeId from pcrime) group by districtName order by cnt desc limit 100\")\n//topDistrict.show(100)\n\nval high\u003dtopDistrict.toJSON.collect.mkString(\"[\", \",\" , \"]\" )\nprint(high)",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-04 15:45:43.409",
+      "progress": 98,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "[{\"districtName\":\"metropolitan \",\"cnt\":1022376},{\"districtName\":\"west yorkshire \",\"cnt\":363277},{\"districtName\":\"west midlands \",\"cnt\":324635},{\"districtName\":\"kent \",\"cnt\":229673},{\"districtName\":\"thames valley \",\"cnt\":215743},{\"districtName\":\"essex \",\"cnt\":208683},{\"districtName\":\"northumbria \",\"cnt\":189759},{\"districtName\":\"hampshire \",\"cnt\":189236},{\"districtName\":\"south yorkshire \",\"cnt\":184302},{\"districtName\":\"lancashire \",\"cnt\":180585},{\"districtName\":\"avon and somerset \",\"cnt\":172419},{\"districtName\":\"merseyside \",\"cnt\":167820},{\"districtName\":\"greater manchester \",\"cnt\":161160},{\"districtName\":\"sussex \",\"cnt\":153741},{\"districtName\":\"south wales \",\"cnt\":140153},{\"districtName\":\"nottinghamshire \",\"cnt\":134728},{\"districtName\":\"devon and cornwall \",\"cnt\":123201},{\"districtName\":\"humberside \",\"cnt\":114921},{\"districtName\":\"leicestershire \",\"cnt\":114015},{\"districtName\":\"west mercia \",\"cnt\":109099},{\"districtName\":\"hertfordshire \",\"cnt\":107856},{\"districtName\":\"cheshire \",\"cnt\":104644},{\"districtName\":\"staffordshire \",\"cnt\":99848},{\"districtName\":\"derbyshire \",\"cnt\":97271},{\"districtName\":\"surrey \",\"cnt\":97138},{\"districtName\":\"cleveland \",\"cnt\":85831},{\"districtName\":\"cambridgeshire \",\"cnt\":85721},{\"districtName\":\"norfolk \",\"cnt\":79387},{\"districtName\":\"durham \",\"cnt\":78785},{\"districtName\":\"northamptonshire \",\"cnt\":77846},{\"districtName\":\"lincolnshire \",\"cnt\":74508},{\"districtName\":\"north wales \",\"cnt\":71738},{\"districtName\":\"suffolk \",\"cnt\":70756},{\"districtName\":\"bedfordshire \",\"cnt\":67531},{\"districtName\":\"dorset \",\"cnt\":66246},{\"districtName\":\"gwent \",\"cnt\":59974},{\"districtName\":\"north yorkshire \",\"cnt\":58951},{\"districtName\":\"wiltshire \",\"cnt\":53860},{\"districtName\":\"warwickshire \",\"cnt\":52798},{\"districtName\":\"gloucestershire \",\"cnt\":49387},{\"districtName\":\"cumbria \",\"cnt\":47398},{\"districtName\":\"dyfed powys \",\"cnt\":38691},{\"districtName\":\"northern ireland \",\"cnt\":11064},{\"districtName\":\"city of london \",\"cnt\":10596},{\"districtName\":\"btp \",\"cnt\":1},{\"cnt\":0}]\u001b[1m\u001b[34mtopDistrict\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.DataFrame\u001b[0m \u003d [districtName: string, cnt: bigint]\n\u001b[1m\u001b[34mhigh\u001b[0m: \u001b[1m\u001b[32mString\u001b[0m \u003d [{\"districtName\":\"metropolitan \",\"cnt\":1022376},{\"districtName\":\"west yorkshire \",\"cnt\":363277},{\"districtName\":\"west midlands \",\"cnt\":324635},{\"districtName\":\"kent \",\"cnt\":229673},{\"districtName\":\"thames valley \",\"cnt\":215743},{\"districtName\":\"essex \",\"cnt\":208683},{\"districtName\":\"northumbria \",\"cnt\":189759},{\"districtName\":\"hampshire \",\"cnt\":189236},{\"districtName\":\"south yorkshire \",\"cnt\":184302},{\"districtName\":\"lancashire \",\"cnt\":180585},{\"districtName\":\"avon and somerset \",\"cnt\":172419},{\"districtName\":\"merseyside \",\"cnt\":167820},{\"districtName\":\"greater manchester \",\"cnt\":161160},{\"districtName\":\"sussex \",\"cnt\":153741},{\"districtNam..."
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://ed62166b77b4:4040/jobs/job?id\u003d25"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1638628845159_965456978",
+      "id": "paragraph_1638540702003_1294949261",
+      "dateCreated": "2021-12-04 14:40:45.159",
+      "dateStarted": "2021-12-04 15:45:43.544",
+      "dateFinished": "2021-12-04 15:46:51.051",
+      "status": "FINISHED"
+    },
+    {
+      "text": "%spark\n//number of crimes by district\nval location\u003dz.textbox(\"District Name\",\"metropolitan\")\nval crimeByLoc\u003dspark.sql(s\"select districtName, crimeType, count(crimeType) cnt from (select distinct districtName,crimeId,crimeType from pcrime where districtName like \u0027%$location%\u0027 ) group by districtName,crimeType order by cnt desc\")\n//highestCTypeJSON.show()\n\nval high\u003dcrimeByLoc.toJSON.collect.mkString(\"[\", \",\" , \"]\" )\nprint(high)",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-04 15:56:17.776",
+      "progress": 63,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {
+          "District Name": "metropolitan"
+        },
+        "forms": {
+          "District Name": {
+            "type": "TextBox",
+            "name": "District Name",
+            "displayName": "District Name",
+            "defaultValue": "metropolitan",
+            "hidden": false
+          }
+        }
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "[{\"districtName\":\"metropolitan \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":257845},{\"districtName\":\"metropolitan \",\"crimeType\":\"Vehicle crime\",\"cnt\":150164},{\"districtName\":\"metropolitan \",\"crimeType\":\"Other theft\",\"cnt\":149490},{\"districtName\":\"west yorkshire \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":146974},{\"districtName\":\"west midlands \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":122643},{\"districtName\":\"kent \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":100461},{\"districtName\":\"metropolitan \",\"crimeType\":\"Burglary\",\"cnt\":97034},{\"districtName\":\"essex \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":87151},{\"districtName\":\"lancashire \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":76942},{\"districtName\":\"hampshire \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":75396},{\"districtName\":\"thames valley \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":75386},{\"districtName\":\"northumbria \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":66518},{\"districtName\":\"metropolitan \",\"crimeType\":\"Theft from the person\",\"cnt\":64867},{\"districtName\":\"metropolitan \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":64771},{\"districtName\":\"south yorkshire \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":64372},{\"districtName\":\"merseyside \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":63536},{\"districtName\":\"avon and somerset \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":60813},{\"districtName\":\"sussex \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":58019},{\"districtName\":\"metropolitan \",\"crimeType\":\"Public order\",\"cnt\":57932},{\"districtName\":\"devon and cornwall \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":55305},{\"districtName\":\"metropolitan \",\"crimeType\":\"Drugs\",\"cnt\":54448},{\"districtName\":\"greater manchester \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":54120},{\"districtName\":\"metropolitan \",\"crimeType\":\"Shoplifting\",\"cnt\":53619},{\"districtName\":\"south wales \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":53349},{\"districtName\":\"west mercia \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":46783},{\"districtName\":\"nottinghamshire \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":46465},{\"districtName\":\"metropolitan \",\"crimeType\":\"Robbery\",\"cnt\":44522},{\"districtName\":\"cheshire \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":43699},{\"districtName\":\"humberside \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":43132},{\"districtName\":\"staffordshire \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":41929},{\"districtName\":\"west midlands \",\"crimeType\":\"Vehicle crime\",\"cnt\":41012},{\"districtName\":\"leicestershire \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":39936},{\"districtName\":\"derbyshire \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":39910},{\"districtName\":\"west yorkshire \",\"crimeType\":\"Public order\",\"cnt\":38008},{\"districtName\":\"west yorkshire \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":37491},{\"districtName\":\"hertfordshire \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":36053},{\"districtName\":\"norfolk \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":34592},{\"districtName\":\"durham \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":33963},{\"districtName\":\"north wales \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":33693},{\"districtName\":\"surrey \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":33029},{\"districtName\":\"northamptonshire \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":31634},{\"districtName\":\"cleveland \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":31495},{\"districtName\":\"west midlands \",\"crimeType\":\"Burglary\",\"cnt\":31069},{\"districtName\":\"lincolnshire \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":30726},{\"districtName\":\"suffolk \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":29961},{\"districtName\":\"west midlands \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":29032},{\"districtName\":\"west yorkshire \",\"crimeType\":\"Other theft\",\"cnt\":28896},{\"districtName\":\"cambridgeshire \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":28399},{\"districtName\":\"west yorkshire \",\"crimeType\":\"Burglary\",\"cnt\":28323},{\"districtName\":\"west yorkshire \",\"crimeType\":\"Vehicle crime\",\"cnt\":27104},{\"districtName\":\"northumbria \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":27014},{\"districtName\":\"dorset \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":26846},{\"districtName\":\"kent \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":26268},{\"districtName\":\"gwent \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":25581},{\"districtName\":\"west midlands \",\"crimeType\":\"Other theft\",\"cnt\":25512},{\"districtName\":\"northumbria \",\"crimeType\":\"Public order\",\"cnt\":24873},{\"districtName\":\"thames valley \",\"crimeType\":\"Other theft\",\"cnt\":23944},{\"districtName\":\"thames valley \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":23778},{\"districtName\":\"thames valley \",\"crimeType\":\"Vehicle crime\",\"cnt\":23610},{\"districtName\":\"north yorkshire \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":23383},{\"districtName\":\"avon and somerset \",\"crimeType\":\"Public order\",\"cnt\":23200},{\"districtName\":\"bedfordshire \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":22749},{\"districtName\":\"west yorkshire \",\"crimeType\":\"Shoplifting\",\"cnt\":22726},{\"districtName\":\"metropolitan \",\"crimeType\":\"Bicycle theft\",\"cnt\":21788},{\"districtName\":\"cumbria \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":21723},{\"districtName\":\"essex \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":21668},{\"districtName\":\"west midlands \",\"crimeType\":\"Public order\",\"cnt\":21604},{\"districtName\":\"south yorkshire \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":21239},{\"districtName\":\"lancashire \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":21212},{\"districtName\":\"hampshire \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":20868},{\"districtName\":\"wiltshire \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":20566},{\"districtName\":\"warwickshire \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":20032},{\"districtName\":\"west midlands \",\"crimeType\":\"Shoplifting\",\"cnt\":19940},{\"districtName\":\"greater manchester \",\"crimeType\":\"Public order\",\"cnt\":19588},{\"districtName\":\"avon and somerset \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":19214},{\"districtName\":\"lancashire \",\"crimeType\":\"Other theft\",\"cnt\":19177},{\"districtName\":\"kent \",\"crimeType\":\"Other theft\",\"cnt\":19138},{\"districtName\":\"merseyside \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":19071},{\"districtName\":\"essex \",\"crimeType\":\"Vehicle crime\",\"cnt\":18713},{\"districtName\":\"northumbria \",\"crimeType\":\"Other theft\",\"cnt\":18655},{\"districtName\":\"essex \",\"crimeType\":\"Public order\",\"cnt\":18635},{\"districtName\":\"hampshire \",\"crimeType\":\"Public order\",\"cnt\":18517},{\"districtName\":\"kent \",\"crimeType\":\"Public order\",\"cnt\":18461},{\"districtName\":\"south yorkshire \",\"crimeType\":\"Burglary\",\"cnt\":18289},{\"districtName\":\"dyfed powys \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":17932},{\"districtName\":\"sussex \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":17793},{\"districtName\":\"gloucestershire \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":17722},{\"districtName\":\"devon and cornwall \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":17452},{\"districtName\":\"greater manchester \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":17292},{\"districtName\":\"south yorkshire \",\"crimeType\":\"Public order\",\"cnt\":17191},{\"districtName\":\"cheshire \",\"crimeType\":\"Public order\",\"cnt\":17188},{\"districtName\":\"south yorkshire \",\"crimeType\":\"Vehicle crime\",\"cnt\":17177},{\"districtName\":\"thames valley \",\"crimeType\":\"Shoplifting\",\"cnt\":17035},{\"districtName\":\"kent \",\"crimeType\":\"Vehicle crime\",\"cnt\":16523},{\"districtName\":\"avon and somerset \",\"crimeType\":\"Other theft\",\"cnt\":16458},{\"districtName\":\"northumbria \",\"crimeType\":\"Shoplifting\",\"cnt\":16420},{\"districtName\":\"kent \",\"crimeType\":\"Shoplifting\",\"cnt\":16235},{\"districtName\":\"south yorkshire \",\"crimeType\":\"Other theft\",\"cnt\":16032},{\"districtName\":\"merseyside \",\"crimeType\":\"Public order\",\"cnt\":16024},{\"districtName\":\"essex \",\"crimeType\":\"Other theft\",\"cnt\":16002},{\"districtName\":\"south wales \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":15734},{\"districtName\":\"south wales \",\"crimeType\":\"Public order\",\"cnt\":15678},{\"districtName\":\"greater manchester \",\"crimeType\":\"Vehicle crime\",\"cnt\":15600},{\"districtName\":\"nottinghamshire \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":15145},{\"districtName\":\"humberside \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":15002},{\"districtName\":\"hampshire \",\"crimeType\":\"Other theft\",\"cnt\":14897},{\"districtName\":\"sussex \",\"crimeType\":\"Other theft\",\"cnt\":14835},{\"districtName\":\"lancashire \",\"crimeType\":\"Burglary\",\"cnt\":14726},{\"districtName\":\"hampshire \",\"crimeType\":\"Shoplifting\",\"cnt\":14416},{\"districtName\":\"thames valley \",\"crimeType\":\"Burglary\",\"cnt\":14415},{\"districtName\":\"hampshire \",\"crimeType\":\"Vehicle crime\",\"cnt\":14045},{\"districtName\":\"sussex \",\"crimeType\":\"Public order\",\"cnt\":13971},{\"districtName\":\"greater manchester \",\"crimeType\":\"Burglary\",\"cnt\":13889},{\"districtName\":\"nottinghamshire \",\"crimeType\":\"Shoplifting\",\"cnt\":13726},{\"districtName\":\"merseyside \",\"crimeType\":\"Drugs\",\"cnt\":13709},{\"districtName\":\"hampshire \",\"crimeType\":\"Burglary\",\"cnt\":13512},{\"districtName\":\"lancashire \",\"crimeType\":\"Public order\",\"cnt\":13410},{\"districtName\":\"essex \",\"crimeType\":\"Shoplifting\",\"cnt\":13369},{\"districtName\":\"kent \",\"crimeType\":\"Burglary\",\"cnt\":13352},{\"districtName\":\"avon and somerset \",\"crimeType\":\"Vehicle crime\",\"cnt\":13149},{\"districtName\":\"essex \",\"crimeType\":\"Burglary\",\"cnt\":13080},{\"districtName\":\"greater manchester \",\"crimeType\":\"Other theft\",\"cnt\":13059},{\"districtName\":\"leicestershire \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":13021},{\"districtName\":\"avon and somerset \",\"crimeType\":\"Shoplifting\",\"cnt\":12910},{\"districtName\":\"south wales \",\"crimeType\":\"Shoplifting\",\"cnt\":12595},{\"districtName\":\"south yorkshire \",\"crimeType\":\"Shoplifting\",\"cnt\":12575},{\"districtName\":\"staffordshire \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":12554},{\"districtName\":\"leicestershire \",\"crimeType\":\"Vehicle crime\",\"cnt\":12471},{\"districtName\":\"cleveland \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":12442},{\"districtName\":\"metropolitan \",\"crimeType\":\"Other crime\",\"cnt\":12433},{\"districtName\":\"surrey \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":12388},{\"districtName\":\"west mercia \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":12150},{\"districtName\":\"lancashire \",\"crimeType\":\"Vehicle crime\",\"cnt\":11979},{\"districtName\":\"nottinghamshire \",\"crimeType\":\"Other theft\",\"cnt\":11957},{\"districtName\":\"humberside \",\"crimeType\":\"Shoplifting\",\"cnt\":11795},{\"districtName\":\"south wales \",\"crimeType\":\"Other theft\",\"cnt\":11743},{\"districtName\":\"avon and somerset \",\"crimeType\":\"Burglary\",\"cnt\":11663},{\"districtName\":\"humberside \",\"crimeType\":\"Public order\",\"cnt\":11569},{\"districtName\":\"hertfordshire \",\"crimeType\":\"Vehicle crime\",\"cnt\":11557},{\"districtName\":\"merseyside \",\"crimeType\":\"Other theft\",\"cnt\":11447},{\"districtName\":\"durham \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":11387},{\"districtName\":\"cheshire \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":11376},{\"districtName\":\"sussex \",\"crimeType\":\"Vehicle crime\",\"cnt\":11354},{\"districtName\":\"merseyside \",\"crimeType\":\"Vehicle crime\",\"cnt\":11348},{\"districtName\":\"lancashire \",\"crimeType\":\"Shoplifting\",\"cnt\":11261},{\"districtName\":\"hertfordshire \",\"crimeType\":\"Other theft\",\"cnt\":11228},{\"districtName\":\"merseyside \",\"crimeType\":\"Burglary\",\"cnt\":11180},{\"districtName\":\"hertfordshire \",\"crimeType\":\"Shoplifting\",\"cnt\":11127},{\"districtName\":\"derbyshire \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":11116},{\"districtName\":\"sussex \",\"crimeType\":\"Shoplifting\",\"cnt\":11097},{\"districtName\":\"thames valley \",\"crimeType\":\"Public order\",\"cnt\":11085},{\"districtName\":\"hertfordshire \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":10831},{\"districtName\":\"leicestershire \",\"crimeType\":\"Other theft\",\"cnt\":10806},{\"districtName\":\"northumbria \",\"crimeType\":\"Vehicle crime\",\"cnt\":10801},{\"districtName\":\"west midlands \",\"crimeType\":\"Robbery\",\"cnt\":10758},{\"districtName\":\"nottinghamshire \",\"crimeType\":\"Vehicle crime\",\"cnt\":10757},{\"districtName\":\"leicestershire \",\"crimeType\":\"Public order\",\"cnt\":10662},{\"districtName\":\"devon and cornwall \",\"crimeType\":\"Other theft\",\"cnt\":10309},{\"districtName\":\"northumbria \",\"crimeType\":\"Burglary\",\"cnt\":10241},{\"districtName\":\"surrey \",\"crimeType\":\"Other theft\",\"cnt\":10116},{\"districtName\":\"west mercia \",\"crimeType\":\"Other theft\",\"cnt\":10081},{\"districtName\":\"staffordshire \",\"crimeType\":\"Other theft\",\"cnt\":9885},{\"districtName\":\"surrey \",\"crimeType\":\"Public order\",\"cnt\":9861},{\"districtName\":\"cambridgeshire \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":9845},{\"districtName\":\"sussex \",\"crimeType\":\"Burglary\",\"cnt\":9839},{\"districtName\":\"gwent \",\"crimeType\":\"Public order\",\"cnt\":9826},{\"districtName\":\"northern ireland \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":9794},{\"districtName\":\"south wales \",\"crimeType\":\"Vehicle crime\",\"cnt\":9717},{\"districtName\":\"west yorkshire \",\"crimeType\":\"Drugs\",\"cnt\":9713},{\"districtName\":\"merseyside \",\"crimeType\":\"Shoplifting\",\"cnt\":9688},{\"districtName\":\"nottinghamshire \",\"crimeType\":\"Burglary\",\"cnt\":9599},{\"districtName\":\"west mercia \",\"crimeType\":\"Shoplifting\",\"cnt\":9585},{\"districtName\":\"norfolk \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":9449},{\"districtName\":\"humberside \",\"crimeType\":\"Burglary\",\"cnt\":9418},{\"districtName\":\"nottinghamshire \",\"crimeType\":\"Public order\",\"cnt\":9368},{\"districtName\":\"west yorkshire \",\"crimeType\":\"Other crime\",\"cnt\":9332},{\"districtName\":\"leicestershire \",\"crimeType\":\"Burglary\",\"cnt\":9194},{\"districtName\":\"staffordshire \",\"crimeType\":\"Shoplifting\",\"cnt\":9176},{\"districtName\":\"greater manchester \",\"crimeType\":\"Shoplifting\",\"cnt\":9153},{\"districtName\":\"north wales \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":9110},{\"districtName\":\"cleveland \",\"crimeType\":\"Shoplifting\",\"cnt\":9006},{\"districtName\":\"surrey \",\"crimeType\":\"Vehicle crime\",\"cnt\":8907},{\"districtName\":\"devon and cornwall \",\"crimeType\":\"Public order\",\"cnt\":8884},{\"districtName\":\"dorset \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":8830},{\"districtName\":\"humberside \",\"crimeType\":\"Other theft\",\"cnt\":8692},{\"districtName\":\"northern ireland \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":8658},{\"districtName\":\"derbyshire \",\"crimeType\":\"Other theft\",\"cnt\":8498},{\"districtName\":\"lincolnshire \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":8495},{\"districtName\":\"northamptonshire \",\"crimeType\":\"Vehicle crime\",\"cnt\":8438},{\"districtName\":\"west mercia \",\"crimeType\":\"Burglary\",\"cnt\":8389},{\"districtName\":\"cambridgeshire \",\"crimeType\":\"Other theft\",\"cnt\":8333},{\"districtName\":\"bedfordshire \",\"crimeType\":\"Vehicle crime\",\"cnt\":8325},{\"districtName\":\"northamptonshire \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":8207},{\"districtName\":\"suffolk \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":7967},{\"districtName\":\"surrey \",\"crimeType\":\"Burglary\",\"cnt\":7962},{\"districtName\":\"derbyshire \",\"crimeType\":\"Public order\",\"cnt\":7862},{\"districtName\":\"norfolk \",\"crimeType\":\"Public order\",\"cnt\":7836},{\"districtName\":\"metropolitan \",\"crimeType\":\"Possession of weapons\",\"cnt\":7787},{\"districtName\":\"devon and cornwall \",\"crimeType\":\"Shoplifting\",\"cnt\":7679},{\"districtName\":\"cheshire \",\"crimeType\":\"Other theft\",\"cnt\":7645},{\"districtName\":\"cheshire \",\"crimeType\":\"Shoplifting\",\"cnt\":7630},{\"districtName\":\"cambridgeshire \",\"crimeType\":\"Vehicle crime\",\"cnt\":7574},{\"districtName\":\"south wales \",\"crimeType\":\"Burglary\",\"cnt\":7554},{\"districtName\":\"northern ireland \",\"crimeType\":\"Other theft\",\"cnt\":7544},{\"districtName\":\"hertfordshire \",\"crimeType\":\"Public order\",\"cnt\":7466},{\"districtName\":\"thames valley \",\"crimeType\":\"Drugs\",\"cnt\":7417},{\"districtName\":\"hertfordshire \",\"crimeType\":\"Burglary\",\"cnt\":7224},{\"districtName\":\"derbyshire \",\"crimeType\":\"Burglary\",\"cnt\":7196},{\"districtName\":\"cambridgeshire \",\"crimeType\":\"Public order\",\"cnt\":7157},{\"districtName\":\"north yorkshire \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":7154},{\"districtName\":\"essex \",\"crimeType\":\"Drugs\",\"cnt\":7123},{\"districtName\":\"cleveland \",\"crimeType\":\"Other theft\",\"cnt\":7091},{\"districtName\":\"wiltshire \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":7082},{\"districtName\":\"cumbria \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":7051},{\"districtName\":\"west midlands \",\"crimeType\":\"Drugs\",\"cnt\":7035},{\"districtName\":\"north wales \",\"crimeType\":\"Public order\",\"cnt\":6986},{\"districtName\":\"dorset \",\"crimeType\":\"Other theft\",\"cnt\":6897},{\"districtName\":\"kent \",\"crimeType\":\"Other crime\",\"cnt\":6889},{\"districtName\":\"derbyshire \",\"crimeType\":\"Shoplifting\",\"cnt\":6852},{\"districtName\":\"staffordshire \",\"crimeType\":\"Vehicle crime\",\"cnt\":6825},{\"districtName\":\"bedfordshire \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":6788},{\"districtName\":\"west mercia \",\"crimeType\":\"Vehicle crime\",\"cnt\":6786},{\"districtName\":\"cleveland \",\"crimeType\":\"Public order\",\"cnt\":6694},{\"districtName\":\"lincolnshire \",\"crimeType\":\"Shoplifting\",\"cnt\":6694},{\"districtName\":\"derbyshire \",\"crimeType\":\"Vehicle crime\",\"cnt\":6630},{\"districtName\":\"thames valley \",\"crimeType\":\"Bicycle theft\",\"cnt\":6620},{\"districtName\":\"cambridgeshire \",\"crimeType\":\"Burglary\",\"cnt\":6609},{\"districtName\":\"humberside \",\"crimeType\":\"Vehicle crime\",\"cnt\":6608},{\"districtName\":\"west mercia \",\"crimeType\":\"Public order\",\"cnt\":6593},{\"districtName\":\"cleveland \",\"crimeType\":\"Burglary\",\"cnt\":6572},{\"districtName\":\"northamptonshire \",\"crimeType\":\"Burglary\",\"cnt\":6469},{\"districtName\":\"suffolk \",\"crimeType\":\"Public order\",\"cnt\":6420},{\"districtName\":\"northamptonshire \",\"crimeType\":\"Other theft\",\"cnt\":6400},{\"districtName\":\"durham \",\"crimeType\":\"Other theft\",\"cnt\":6352},{\"districtName\":\"bedfordshire \",\"crimeType\":\"Other theft\",\"cnt\":6320},{\"districtName\":\"bedfordshire \",\"crimeType\":\"Burglary\",\"cnt\":6312},{\"districtName\":\"lincolnshire \",\"crimeType\":\"Public order\",\"cnt\":6289},{\"districtName\":\"leicestershire \",\"crimeType\":\"Shoplifting\",\"cnt\":6279},{\"districtName\":\"lincolnshire \",\"crimeType\":\"Other theft\",\"cnt\":6255},{\"districtName\":\"durham \",\"crimeType\":\"Shoplifting\",\"cnt\":6244},{\"districtName\":\"bedfordshire \",\"crimeType\":\"Public order\",\"cnt\":6204},{\"districtName\":\"norfolk \",\"crimeType\":\"Other theft\",\"cnt\":6145},{\"districtName\":\"staffordshire \",\"crimeType\":\"Burglary\",\"cnt\":6091},{\"districtName\":\"nottinghamshire \",\"crimeType\":\"Drugs\",\"cnt\":6077},{\"districtName\":\"northern ireland \",\"crimeType\":\"Drugs\",\"cnt\":6067},{\"districtName\":\"gloucestershire \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":6053},{\"districtName\":\"durham \",\"crimeType\":\"Public order\",\"cnt\":6053},{\"districtName\":\"warwickshire \",\"crimeType\":\"Vehicle crime\",\"cnt\":5983},{\"districtName\":\"devon and cornwall \",\"crimeType\":\"Burglary\",\"cnt\":5971},{\"districtName\":\"north wales \",\"crimeType\":\"Other theft\",\"cnt\":5818},{\"districtName\":\"suffolk \",\"crimeType\":\"Other theft\",\"cnt\":5793},{\"districtName\":\"devon and cornwall \",\"crimeType\":\"Vehicle crime\",\"cnt\":5675},{\"districtName\":\"north yorkshire \",\"crimeType\":\"Shoplifting\",\"cnt\":5637},{\"districtName\":\"north yorkshire \",\"crimeType\":\"Other theft\",\"cnt\":5629},{\"districtName\":\"warwickshire \",\"crimeType\":\"Other theft\",\"cnt\":5624},{\"districtName\":\"south wales \",\"crimeType\":\"Drugs\",\"cnt\":5619},{\"districtName\":\"cambridgeshire \",\"crimeType\":\"Shoplifting\",\"cnt\":5607},{\"districtName\":\"west midlands \",\"crimeType\":\"Other crime\",\"cnt\":5583},{\"districtName\":\"gwent \",\"crimeType\":\"Other theft\",\"cnt\":5573},{\"districtName\":\"norfolk \",\"crimeType\":\"Shoplifting\",\"cnt\":5537},{\"districtName\":\"dorset \",\"crimeType\":\"Vehicle crime\",\"cnt\":5509},{\"districtName\":\"northern ireland \",\"crimeType\":\"Shoplifting\",\"cnt\":5420},{\"districtName\":\"wiltshire \",\"crimeType\":\"Shoplifting\",\"cnt\":5418},{\"districtName\":\"cambridgeshire \",\"crimeType\":\"Bicycle theft\",\"cnt\":5359},{\"districtName\":\"lincolnshire \",\"crimeType\":\"Burglary\",\"cnt\":5343},{\"districtName\":\"south yorkshire \",\"crimeType\":\"Other crime\",\"cnt\":5325},{\"districtName\":\"hampshire \",\"crimeType\":\"Drugs\",\"cnt\":5321},{\"districtName\":\"surrey \",\"crimeType\":\"Shoplifting\",\"cnt\":5302},{\"districtName\":\"cheshire \",\"crimeType\":\"Burglary\",\"cnt\":5263},{\"districtName\":\"devon and cornwall \",\"crimeType\":\"Drugs\",\"cnt\":5255},{\"districtName\":\"northamptonshire \",\"crimeType\":\"Shoplifting\",\"cnt\":5241},{\"districtName\":\"durham \",\"crimeType\":\"Burglary\",\"cnt\":5229},{\"districtName\":\"warwickshire \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":5222},{\"districtName\":\"wiltshire \",\"crimeType\":\"Other theft\",\"cnt\":5211},{\"districtName\":\"northern ireland \",\"crimeType\":\"Burglary\",\"cnt\":5198},{\"districtName\":\"suffolk \",\"crimeType\":\"Shoplifting\",\"cnt\":5163},{\"districtName\":\"north wales \",\"crimeType\":\"Shoplifting\",\"cnt\":5131},{\"districtName\":\"staffordshire \",\"crimeType\":\"Public order\",\"cnt\":5108},{\"districtName\":\"dyfed powys \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":5061},{\"districtName\":\"sussex \",\"crimeType\":\"Drugs\",\"cnt\":5044},{\"districtName\":\"gloucestershire \",\"crimeType\":\"Other theft\",\"cnt\":4990},{\"districtName\":\"cleveland \",\"crimeType\":\"Vehicle crime\",\"cnt\":4989},{\"districtName\":\"cumbria \",\"crimeType\":\"Public order\",\"cnt\":4978},{\"districtName\":\"west yorkshire \",\"crimeType\":\"Theft from the person\",\"cnt\":4925},{\"districtName\":\"dorset \",\"crimeType\":\"Burglary\",\"cnt\":4783},{\"districtName\":\"essex \",\"crimeType\":\"Other crime\",\"cnt\":4772},{\"districtName\":\"north yorkshire \",\"crimeType\":\"Burglary\",\"cnt\":4682},{\"districtName\":\"kent \",\"crimeType\":\"Drugs\",\"cnt\":4641},{\"districtName\":\"warwickshire \",\"crimeType\":\"Burglary\",\"cnt\":4580},{\"districtName\":\"south yorkshire \",\"crimeType\":\"Drugs\",\"cnt\":4411},{\"districtName\":\"cheshire \",\"crimeType\":\"Vehicle crime\",\"cnt\":4408},{\"districtName\":\"gloucestershire \",\"crimeType\":\"Burglary\",\"cnt\":4406},{\"districtName\":\"west yorkshire \",\"crimeType\":\"Robbery\",\"cnt\":4403},{\"districtName\":\"bedfordshire \",\"crimeType\":\"Shoplifting\",\"cnt\":4358},{\"districtName\":\"gwent \",\"crimeType\":\"Shoplifting\",\"cnt\":4298},{\"districtName\":\"gwent \",\"crimeType\":\"Vehicle crime\",\"cnt\":4279},{\"districtName\":\"suffolk \",\"crimeType\":\"Vehicle crime\",\"cnt\":4251},{\"districtName\":\"dorset \",\"crimeType\":\"Shoplifting\",\"cnt\":4246},{\"districtName\":\"thames valley \",\"crimeType\":\"Other crime\",\"cnt\":4241},{\"districtName\":\"suffolk \",\"crimeType\":\"Burglary\",\"cnt\":4239},{\"districtName\":\"northumbria \",\"crimeType\":\"Other crime\",\"cnt\":4226},{\"districtName\":\"northumbria \",\"crimeType\":\"Drugs\",\"cnt\":4150},{\"districtName\":\"gloucestershire \",\"crimeType\":\"Vehicle crime\",\"cnt\":4096},{\"districtName\":\"warwickshire \",\"crimeType\":\"Shoplifting\",\"cnt\":4089},{\"districtName\":\"thames valley \",\"crimeType\":\"Theft from the person\",\"cnt\":4074},{\"districtName\":\"north wales \",\"crimeType\":\"Burglary\",\"cnt\":4044},{\"districtName\":\"northamptonshire \",\"crimeType\":\"Public order\",\"cnt\":3957},{\"districtName\":\"durham \",\"crimeType\":\"Vehicle crime\",\"cnt\":3939},{\"districtName\":\"greater manchester \",\"crimeType\":\"Other crime\",\"cnt\":3910},{\"districtName\":\"avon and somerset \",\"crimeType\":\"Drugs\",\"cnt\":3903},{\"districtName\":\"lincolnshire \",\"crimeType\":\"Vehicle crime\",\"cnt\":3898},{\"districtName\":\"gloucestershire \",\"crimeType\":\"Shoplifting\",\"cnt\":3892},{\"districtName\":\"dorset \",\"crimeType\":\"Public order\",\"cnt\":3848},{\"districtName\":\"west midlands \",\"crimeType\":\"Theft from the person\",\"cnt\":3845},{\"districtName\":\"hampshire \",\"crimeType\":\"Bicycle theft\",\"cnt\":3838},{\"districtName\":\"hertfordshire \",\"crimeType\":\"Drugs\",\"cnt\":3810},{\"districtName\":\"norfolk \",\"crimeType\":\"Burglary\",\"cnt\":3759},{\"districtName\":\"west midlands \",\"crimeType\":\"Possession of weapons\",\"cnt\":3743},{\"districtName\":\"wiltshire \",\"crimeType\":\"Public order\",\"cnt\":3723},{\"districtName\":\"nottinghamshire \",\"crimeType\":\"Other crime\",\"cnt\":3688},{\"districtName\":\"cumbria \",\"crimeType\":\"Other theft\",\"cnt\":3642},{\"districtName\":\"north yorkshire \",\"crimeType\":\"Public order\",\"cnt\":3631},{\"districtName\":\"greater manchester \",\"crimeType\":\"Theft from the person\",\"cnt\":3628},{\"districtName\":\"surrey \",\"crimeType\":\"Drugs\",\"cnt\":3625},{\"districtName\":\"wiltshire \",\"crimeType\":\"Burglary\",\"cnt\":3615},{\"districtName\":\"avon and somerset \",\"crimeType\":\"Bicycle theft\",\"cnt\":3608},{\"districtName\":\"gloucestershire \",\"crimeType\":\"Public order\",\"cnt\":3577},{\"districtName\":\"leicestershire \",\"crimeType\":\"Drugs\",\"cnt\":3568},{\"districtName\":\"greater manchester \",\"crimeType\":\"Drugs\",\"cnt\":3548},{\"districtName\":\"greater manchester \",\"crimeType\":\"Robbery\",\"cnt\":3505},{\"districtName\":\"merseyside \",\"crimeType\":\"Other crime\",\"cnt\":3472},{\"districtName\":\"dyfed powys \",\"crimeType\":\"Other theft\",\"cnt\":3384},{\"districtName\":\"lancashire \",\"crimeType\":\"Other crime\",\"cnt\":3374},{\"districtName\":\"wiltshire \",\"crimeType\":\"Vehicle crime\",\"cnt\":3331},{\"districtName\":\"northern ireland \",\"crimeType\":\"Vehicle crime\",\"cnt\":3280},{\"districtName\":\"city of london \",\"crimeType\":\"Other theft\",\"cnt\":3277},{\"districtName\":\"norfolk \",\"crimeType\":\"Drugs\",\"cnt\":3274},{\"districtName\":\"gwent \",\"crimeType\":\"Burglary\",\"cnt\":3206},{\"districtName\":\"hampshire \",\"crimeType\":\"Other crime\",\"cnt\":3195},{\"districtName\":\"sussex \",\"crimeType\":\"Other crime\",\"cnt\":3088},{\"districtName\":\"sussex \",\"crimeType\":\"Bicycle theft\",\"cnt\":3065},{\"districtName\":\"lancashire \",\"crimeType\":\"Drugs\",\"cnt\":3021},{\"districtName\":\"west yorkshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":3015},{\"districtName\":\"derbyshire \",\"crimeType\":\"Drugs\",\"cnt\":2970},{\"districtName\":\"merseyside \",\"crimeType\":\"Theft from the person\",\"cnt\":2940},{\"districtName\":\"north yorkshire \",\"crimeType\":\"Vehicle crime\",\"cnt\":2921},{\"districtName\":\"cumbria \",\"crimeType\":\"Shoplifting\",\"cnt\":2914},{\"districtName\":\"west mercia \",\"crimeType\":\"Drugs\",\"cnt\":2907},{\"districtName\":\"warwickshire \",\"crimeType\":\"Public order\",\"cnt\":2883},{\"districtName\":\"south wales \",\"crimeType\":\"Other crime\",\"cnt\":2860},{\"districtName\":\"northern ireland \",\"crimeType\":\"Other crime\",\"cnt\":2859},{\"districtName\":\"west midlands \",\"crimeType\":\"Bicycle theft\",\"cnt\":2858},{\"districtName\":\"humberside \",\"crimeType\":\"Other crime\",\"cnt\":2838},{\"districtName\":\"dyfed powys \",\"crimeType\":\"Public order\",\"cnt\":2737},{\"districtName\":\"norfolk \",\"crimeType\":\"Vehicle crime\",\"cnt\":2716},{\"districtName\":\"devon and cornwall \",\"crimeType\":\"Other crime\",\"cnt\":2695},{\"districtName\":\"cumbria \",\"crimeType\":\"Burglary\",\"cnt\":2634},{\"districtName\":\"nottinghamshire \",\"crimeType\":\"Theft from the person\",\"cnt\":2528},{\"districtName\":\"norfolk \",\"crimeType\":\"Other crime\",\"cnt\":2513},{\"districtName\":\"essex \",\"crimeType\":\"Bicycle theft\",\"cnt\":2499},{\"districtName\":\"avon and somerset \",\"crimeType\":\"Other crime\",\"cnt\":2482},{\"districtName\":\"leicestershire \",\"crimeType\":\"Other crime\",\"cnt\":2480},{\"districtName\":\"hertfordshire \",\"crimeType\":\"Other crime\",\"cnt\":2455},{\"districtName\":\"staffordshire \",\"crimeType\":\"Drugs\",\"cnt\":2453},{\"districtName\":\"dyfed powys \",\"crimeType\":\"Drugs\",\"cnt\":2447},{\"districtName\":\"kent \",\"crimeType\":\"Robbery\",\"cnt\":2402},{\"districtName\":\"west yorkshire \",\"crimeType\":\"Bicycle theft\",\"cnt\":2366},{\"districtName\":\"nottinghamshire \",\"crimeType\":\"Bicycle theft\",\"cnt\":2366},{\"districtName\":\"lincolnshire \",\"crimeType\":\"Drugs\",\"cnt\":2353},{\"districtName\":\"north wales \",\"crimeType\":\"Vehicle crime\",\"cnt\":2349},{\"districtName\":\"cleveland \",\"crimeType\":\"Other crime\",\"cnt\":2321},{\"districtName\":\"sussex \",\"crimeType\":\"Possession of weapons\",\"cnt\":2300},{\"districtName\":\"derbyshire \",\"crimeType\":\"Other crime\",\"cnt\":2293},{\"districtName\":\"south wales \",\"crimeType\":\"Bicycle theft\",\"cnt\":2269},{\"districtName\":\"northamptonshire \",\"crimeType\":\"Drugs\",\"cnt\":2239},{\"districtName\":\"dyfed powys \",\"crimeType\":\"Shoplifting\",\"cnt\":2228},{\"districtName\":\"avon and somerset \",\"crimeType\":\"Robbery\",\"cnt\":2212},{\"districtName\":\"northumbria \",\"crimeType\":\"Theft from the person\",\"cnt\":2211},{\"districtName\":\"south yorkshire \",\"crimeType\":\"Robbery\",\"cnt\":2199},{\"districtName\":\"staffordshire \",\"crimeType\":\"Other crime\",\"cnt\":2179},{\"districtName\":\"surrey \",\"crimeType\":\"Other crime\",\"cnt\":2167},{\"districtName\":\"cleveland \",\"crimeType\":\"Drugs\",\"cnt\":2143},{\"districtName\":\"south yorkshire \",\"crimeType\":\"Theft from the person\",\"cnt\":2139},{\"districtName\":\"merseyside \",\"crimeType\":\"Bicycle theft\",\"cnt\":2121},{\"districtName\":\"durham \",\"crimeType\":\"Other crime\",\"cnt\":2115},{\"districtName\":\"greater manchester \",\"crimeType\":\"Possession of weapons\",\"cnt\":2115},{\"districtName\":\"humberside \",\"crimeType\":\"Bicycle theft\",\"cnt\":2106},{\"districtName\":\"south yorkshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":2097},{\"districtName\":\"thames valley \",\"crimeType\":\"Possession of weapons\",\"cnt\":2093},{\"districtName\":\"hampshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":2088},{\"districtName\":\"essex \",\"crimeType\":\"Robbery\",\"cnt\":2083},{\"districtName\":\"cambridgeshire \",\"crimeType\":\"Drugs\",\"cnt\":2077},{\"districtName\":\"leicestershire \",\"crimeType\":\"Bicycle theft\",\"cnt\":2074},{\"districtName\":\"north yorkshire \",\"crimeType\":\"Drugs\",\"cnt\":2065},{\"districtName\":\"gwent \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":2060},{\"districtName\":\"thames valley \",\"crimeType\":\"Robbery\",\"cnt\":2044},{\"districtName\":\"hertfordshire \",\"crimeType\":\"Bicycle theft\",\"cnt\":2042},{\"districtName\":\"cheshire \",\"crimeType\":\"Drugs\",\"cnt\":2034},{\"districtName\":\"kent \",\"crimeType\":\"Possession of weapons\",\"cnt\":2027},{\"districtName\":\"dyfed powys \",\"crimeType\":\"Burglary\",\"cnt\":2026},{\"districtName\":\"suffolk \",\"crimeType\":\"Drugs\",\"cnt\":2025},{\"districtName\":\"northumbria \",\"crimeType\":\"Bicycle theft\",\"cnt\":1986},{\"districtName\":\"cheshire \",\"crimeType\":\"Other crime\",\"cnt\":1970},{\"districtName\":\"gwent \",\"crimeType\":\"Drugs\",\"cnt\":1968},{\"districtName\":\"essex \",\"crimeType\":\"Possession of weapons\",\"cnt\":1901},{\"districtName\":\"west mercia \",\"crimeType\":\"Other crime\",\"cnt\":1867},{\"districtName\":\"northamptonshire \",\"crimeType\":\"Other crime\",\"cnt\":1856},{\"districtName\":\"durham \",\"crimeType\":\"Drugs\",\"cnt\":1835},{\"districtName\":\"hertfordshire \",\"crimeType\":\"Theft from the person\",\"cnt\":1809},{\"districtName\":\"sussex \",\"crimeType\":\"Theft from the person\",\"cnt\":1788},{\"districtName\":\"hampshire \",\"crimeType\":\"Robbery\",\"cnt\":1783},{\"districtName\":\"greater manchester \",\"crimeType\":\"Bicycle theft\",\"cnt\":1752},{\"districtName\":\"cambridgeshire \",\"crimeType\":\"Other crime\",\"cnt\":1751},{\"districtName\":\"wiltshire \",\"crimeType\":\"Drugs\",\"cnt\":1731},{\"districtName\":\"north wales \",\"crimeType\":\"Drugs\",\"cnt\":1710},{\"districtName\":\"bedfordshire \",\"crimeType\":\"Drugs\",\"cnt\":1696},{\"districtName\":\"lincolnshire \",\"crimeType\":\"Other crime\",\"cnt\":1694},{\"districtName\":\"essex \",\"crimeType\":\"Theft from the person\",\"cnt\":1686},{\"districtName\":\"avon and somerset \",\"crimeType\":\"Theft from the person\",\"cnt\":1685},{\"districtName\":\"kent \",\"crimeType\":\"Bicycle theft\",\"cnt\":1674},{\"districtName\":\"northumbria \",\"crimeType\":\"Possession of weapons\",\"cnt\":1671},{\"districtName\":\"merseyside \",\"crimeType\":\"Robbery\",\"cnt\":1652},{\"districtName\":\"gwent \",\"crimeType\":\"Other crime\",\"cnt\":1648},{\"districtName\":\"dorset \",\"crimeType\":\"Drugs\",\"cnt\":1646},{\"districtName\":\"merseyside \",\"crimeType\":\"Possession of weapons\",\"cnt\":1631},{\"districtName\":\"city of london \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":1630},{\"districtName\":\"gloucestershire \",\"crimeType\":\"Drugs\",\"cnt\":1614},{\"districtName\":\"kent \",\"crimeType\":\"Theft from the person\",\"cnt\":1601},{\"districtName\":\"humberside \",\"crimeType\":\"Drugs\",\"cnt\":1592},{\"districtName\":\"suffolk \",\"crimeType\":\"Other crime\",\"cnt\":1564},{\"districtName\":\"surrey \",\"crimeType\":\"Bicycle theft\",\"cnt\":1559},{\"districtName\":\"nottinghamshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":1552},{\"districtName\":\"cheshire \",\"crimeType\":\"Bicycle theft\",\"cnt\":1552},{\"districtName\":\"sussex \",\"crimeType\":\"Robbery\",\"cnt\":1547},{\"districtName\":\"lancashire \",\"crimeType\":\"Bicycle theft\",\"cnt\":1506},{\"districtName\":\"nottinghamshire \",\"crimeType\":\"Robbery\",\"cnt\":1500},{\"districtName\":\"south wales \",\"crimeType\":\"Theft from the person\",\"cnt\":1478},{\"districtName\":\"north wales \",\"crimeType\":\"Other crime\",\"cnt\":1444},{\"districtName\":\"lancashire \",\"crimeType\":\"Theft from the person\",\"cnt\":1418},{\"districtName\":\"lancashire \",\"crimeType\":\"Robbery\",\"cnt\":1401},{\"districtName\":\"norfolk \",\"crimeType\":\"Bicycle theft\",\"cnt\":1400},{\"districtName\":\"dorset \",\"crimeType\":\"Bicycle theft\",\"cnt\":1393},{\"districtName\":\"devon and cornwall \",\"crimeType\":\"Possession of weapons\",\"cnt\":1393},{\"districtName\":\"cumbria \",\"crimeType\":\"Vehicle crime\",\"cnt\":1369},{\"districtName\":\"suffolk \",\"crimeType\":\"Bicycle theft\",\"cnt\":1364},{\"districtName\":\"hampshire \",\"crimeType\":\"Theft from the person\",\"cnt\":1359},{\"districtName\":\"north yorkshire \",\"crimeType\":\"Bicycle theft\",\"cnt\":1339},{\"districtName\":\"northern ireland \",\"crimeType\":\"Public order\",\"cnt\":1323},{\"districtName\":\"leicestershire \",\"crimeType\":\"Robbery\",\"cnt\":1307},{\"districtName\":\"hertfordshire \",\"crimeType\":\"Robbery\",\"cnt\":1304},{\"districtName\":\"north yorkshire \",\"crimeType\":\"Other crime\",\"cnt\":1281},{\"districtName\":\"northern ireland \",\"crimeType\":\"Possession of weapons\",\"cnt\":1265},{\"districtName\":\"south yorkshire \",\"crimeType\":\"Bicycle theft\",\"cnt\":1255},{\"districtName\":\"leicestershire \",\"crimeType\":\"Theft from the person\",\"cnt\":1223},{\"districtName\":\"lincolnshire \",\"crimeType\":\"Bicycle theft\",\"cnt\":1221},{\"districtName\":\"cambridgeshire \",\"crimeType\":\"Theft from the person\",\"cnt\":1197},{\"districtName\":\"bedfordshire \",\"crimeType\":\"Other crime\",\"cnt\":1194},{\"districtName\":\"dyfed powys \",\"crimeType\":\"Vehicle crime\",\"cnt\":1193},{\"districtName\":\"bedfordshire \",\"crimeType\":\"Bicycle theft\",\"cnt\":1193},{\"districtName\":\"warwickshire \",\"crimeType\":\"Drugs\",\"cnt\":1188},{\"districtName\":\"west mercia \",\"crimeType\":\"Possession of weapons\",\"cnt\":1186},{\"districtName\":\"derbyshire \",\"crimeType\":\"Bicycle theft\",\"cnt\":1174},{\"districtName\":\"cumbria \",\"crimeType\":\"Drugs\",\"cnt\":1163},{\"districtName\":\"lancashire \",\"crimeType\":\"Possession of weapons\",\"cnt\":1162},{\"districtName\":\"avon and somerset \",\"crimeType\":\"Possession of weapons\",\"cnt\":1143},{\"districtName\":\"city of london \",\"crimeType\":\"Shoplifting\",\"cnt\":1135},{\"districtName\":\"northamptonshire \",\"crimeType\":\"Robbery\",\"cnt\":1107},{\"districtName\":\"city of london \",\"crimeType\":\"Theft from the person\",\"cnt\":1063},{\"districtName\":\"bedfordshire \",\"crimeType\":\"Robbery\",\"cnt\":1055},{\"districtName\":\"west mercia \",\"crimeType\":\"Bicycle theft\",\"cnt\":1034},{\"districtName\":\"staffordshire \",\"crimeType\":\"Robbery\",\"cnt\":1032},{\"districtName\":\"dyfed powys \",\"crimeType\":\"Other crime\",\"cnt\":1029},{\"districtName\":\"staffordshire \",\"crimeType\":\"Bicycle theft\",\"cnt\":1005},{\"districtName\":\"leicestershire \",\"crimeType\":\"Possession of weapons\",\"cnt\":993},{\"districtName\":\"northumbria \",\"crimeType\":\"Robbery\",\"cnt\":992},{\"districtName\":\"gloucestershire \",\"crimeType\":\"Bicycle theft\",\"cnt\":991},{\"districtName\":\"cambridgeshire \",\"crimeType\":\"Robbery\",\"cnt\":968},{\"districtName\":\"wiltshire \",\"crimeType\":\"Bicycle theft\",\"cnt\":954},{\"districtName\":\"hertfordshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":949},{\"districtName\":\"northamptonshire \",\"crimeType\":\"Bicycle theft\",\"cnt\":944},{\"districtName\":\"northern ireland \",\"crimeType\":\"Bicycle theft\",\"cnt\":942},{\"districtName\":\"cumbria \",\"crimeType\":\"Other crime\",\"cnt\":940},{\"districtName\":\"derbyshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":933},{\"districtName\":\"derbyshire \",\"crimeType\":\"Robbery\",\"cnt\":927},{\"districtName\":\"derbyshire \",\"crimeType\":\"Theft from the person\",\"cnt\":921},{\"districtName\":\"devon and cornwall \",\"crimeType\":\"Theft from the person\",\"cnt\":916},{\"districtName\":\"cleveland \",\"crimeType\":\"Bicycle theft\",\"cnt\":913},{\"districtName\":\"humberside \",\"crimeType\":\"Robbery\",\"cnt\":910},{\"districtName\":\"warwickshire \",\"crimeType\":\"Other crime\",\"cnt\":909},{\"districtName\":\"west mercia \",\"crimeType\":\"Theft from the person\",\"cnt\":903},{\"districtName\":\"devon and cornwall \",\"crimeType\":\"Bicycle theft\",\"cnt\":898},{\"districtName\":\"south wales \",\"crimeType\":\"Possession of weapons\",\"cnt\":896},{\"districtName\":\"staffordshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":889},{\"districtName\":\"wiltshire \",\"crimeType\":\"Other crime\",\"cnt\":876},{\"districtName\":\"cleveland \",\"crimeType\":\"Robbery\",\"cnt\":859},{\"districtName\":\"city of london \",\"crimeType\":\"Drugs\",\"cnt\":856},{\"districtName\":\"cambridgeshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":844},{\"districtName\":\"west mercia \",\"crimeType\":\"Robbery\",\"cnt\":834},{\"districtName\":\"surrey \",\"crimeType\":\"Possession of weapons\",\"cnt\":830},{\"districtName\":\"surrey \",\"crimeType\":\"Theft from the person\",\"cnt\":824},{\"districtName\":\"norfolk \",\"crimeType\":\"Possession of weapons\",\"cnt\":810},{\"districtName\":\"bedfordshire \",\"crimeType\":\"Theft from the person\",\"cnt\":794},{\"districtName\":\"norfolk \",\"crimeType\":\"Theft from the person\",\"cnt\":792},{\"districtName\":\"northamptonshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":776},{\"districtName\":\"gloucestershire \",\"crimeType\":\"Other crime\",\"cnt\":772},{\"districtName\":\"devon and cornwall \",\"crimeType\":\"Robbery\",\"cnt\":769},{\"districtName\":\"lincolnshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":754},{\"districtName\":\"cheshire \",\"crimeType\":\"Theft from the person\",\"cnt\":743},{\"districtName\":\"dorset \",\"crimeType\":\"Other crime\",\"cnt\":741},{\"districtName\":\"suffolk \",\"crimeType\":\"Theft from the person\",\"cnt\":729},{\"districtName\":\"staffordshire \",\"crimeType\":\"Theft from the person\",\"cnt\":723},{\"districtName\":\"northern ireland \",\"crimeType\":\"Robbery\",\"cnt\":717},{\"districtName\":\"cleveland \",\"crimeType\":\"Possession of weapons\",\"cnt\":714},{\"districtName\":\"warwickshire \",\"crimeType\":\"Bicycle theft\",\"cnt\":691},{\"districtName\":\"suffolk \",\"crimeType\":\"Possession of weapons\",\"cnt\":688},{\"districtName\":\"south wales \",\"crimeType\":\"Robbery\",\"cnt\":664},{\"districtName\":\"humberside \",\"crimeType\":\"Theft from the person\",\"cnt\":643},{\"districtName\":\"dorset \",\"crimeType\":\"Theft from the person\",\"cnt\":620},{\"districtName\":\"humberside \",\"crimeType\":\"Possession of weapons\",\"cnt\":615},{\"districtName\":\"northern ireland \",\"crimeType\":\"Theft from the person\",\"cnt\":610},{\"districtName\":\"cheshire \",\"crimeType\":\"Robbery\",\"cnt\":603},{\"districtName\":\"suffolk \",\"crimeType\":\"Robbery\",\"cnt\":591},{\"districtName\":\"cleveland \",\"crimeType\":\"Theft from the person\",\"cnt\":591},{\"districtName\":\"durham \",\"crimeType\":\"Bicycle theft\",\"cnt\":585},{\"districtName\":\"northamptonshire \",\"crimeType\":\"Theft from the person\",\"cnt\":577},{\"districtName\":\"warwickshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":576},{\"districtName\":\"surrey \",\"crimeType\":\"Robbery\",\"cnt\":567},{\"districtName\":\"norfolk \",\"crimeType\":\"Robbery\",\"cnt\":563},{\"districtName\":\"city of london \",\"crimeType\":\"Public order\",\"cnt\":561},{\"districtName\":\"warwickshire \",\"crimeType\":\"Robbery\",\"cnt\":546},{\"districtName\":\"north yorkshire \",\"crimeType\":\"Theft from the person\",\"cnt\":544},{\"districtName\":\"bedfordshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":542},{\"districtName\":\"cheshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":532},{\"districtName\":\"city of london \",\"crimeType\":\"Bicycle theft\",\"cnt\":532},{\"districtName\":\"wiltshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":495},{\"districtName\":\"dorset \",\"crimeType\":\"Robbery\",\"cnt\":492},{\"districtName\":\"north wales \",\"crimeType\":\"Bicycle theft\",\"cnt\":482},{\"districtName\":\"warwickshire \",\"crimeType\":\"Theft from the person\",\"cnt\":474},{\"districtName\":\"wiltshire \",\"crimeType\":\"Theft from the person\",\"cnt\":470},{\"districtName\":\"lincolnshire \",\"crimeType\":\"Robbery\",\"cnt\":466},{\"districtName\":\"gloucestershire \",\"crimeType\":\"Theft from the person\",\"cnt\":443},{\"districtName\":\"gloucestershire \",\"crimeType\":\"Robbery\",\"cnt\":441},{\"districtName\":\"gwent \",\"crimeType\":\"Bicycle theft\",\"cnt\":439},{\"districtName\":\"north wales \",\"crimeType\":\"Possession of weapons\",\"cnt\":434},{\"districtName\":\"durham \",\"crimeType\":\"Possession of weapons\",\"cnt\":422},{\"districtName\":\"dorset \",\"crimeType\":\"Possession of weapons\",\"cnt\":400},{\"districtName\":\"city of london \",\"crimeType\":\"Burglary\",\"cnt\":398},{\"districtName\":\"north yorkshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":394},{\"districtName\":\"gloucestershire \",\"crimeType\":\"Possession of weapons\",\"cnt\":389},{\"districtName\":\"wiltshire \",\"crimeType\":\"Robbery\",\"cnt\":387},{\"districtName\":\"gwent \",\"crimeType\":\"Theft from the person\",\"cnt\":383},{\"districtName\":\"gwent \",\"crimeType\":\"Robbery\",\"cnt\":381},{\"districtName\":\"durham \",\"crimeType\":\"Theft from the person\",\"cnt\":367},{\"districtName\":\"city of london \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":338},{\"districtName\":\"cumbria \",\"crimeType\":\"Possession of weapons\",\"cnt\":336},{\"districtName\":\"gwent \",\"crimeType\":\"Possession of weapons\",\"cnt\":331},{\"districtName\":\"lincolnshire \",\"crimeType\":\"Theft from the person\",\"cnt\":320},{\"districtName\":\"dyfed powys \",\"crimeType\":\"Possession of weapons\",\"cnt\":302},{\"districtName\":\"durham \",\"crimeType\":\"Robbery\",\"cnt\":293},{\"districtName\":\"north yorkshire \",\"crimeType\":\"Robbery\",\"cnt\":291},{\"districtName\":\"cumbria \",\"crimeType\":\"Bicycle theft\",\"cnt\":274},{\"districtName\":\"north wales \",\"crimeType\":\"Robbery\",\"cnt\":272},{\"districtName\":\"city of london \",\"crimeType\":\"Other crime\",\"cnt\":270},{\"districtName\":\"north wales \",\"crimeType\":\"Theft from the person\",\"cnt\":264},{\"districtName\":\"city of london \",\"crimeType\":\"Vehicle crime\",\"cnt\":261},{\"districtName\":\"cumbria \",\"crimeType\":\"Theft from the person\",\"cnt\":189},{\"districtName\":\"city of london \",\"crimeType\":\"Robbery\",\"cnt\":185},{\"districtName\":\"cumbria \",\"crimeType\":\"Robbery\",\"cnt\":184},{\"districtName\":\"dyfed powys \",\"crimeType\":\"Bicycle theft\",\"cnt\":163},{\"districtName\":\"dyfed powys \",\"crimeType\":\"Theft from the person\",\"cnt\":107},{\"districtName\":\"city of london \",\"crimeType\":\"Possession of weapons\",\"cnt\":89},{\"districtName\":\"dyfed powys \",\"crimeType\":\"Robbery\",\"cnt\":81},{\"districtName\":\"south wales \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"btp \",\"crimeType\":\"Public order\",\"cnt\":1},{\"districtName\":\"west mercia \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"btp \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":1},{\"districtName\":\"btp \",\"crimeType\":\"Other crime\",\"cnt\":1},{\"districtName\":\"south yorkshire \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"wiltshire \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"dorset \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"lincolnshire \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"btp \",\"crimeType\":\"Burglary\",\"cnt\":1},{\"districtName\":\"lancashire \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"west midlands \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"surrey \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"city of london \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"nottinghamshire \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"northamptonshire \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"metropolitan \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"suffolk \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"greater manchester \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"norfolk \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"merseyside \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"cleveland \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"northumbria \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"north yorkshire \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"cumbria \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"leicestershire \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"btp \",\"crimeType\":\"Robbery\",\"cnt\":1},{\"districtName\":\"btp \",\"crimeType\":\"Criminal damage and arson\",\"cnt\":1},{\"districtName\":\"btp \",\"crimeType\":\"Drugs\",\"cnt\":1},{\"districtName\":\"derbyshire \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"thames valley \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"bedfordshire \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"northern ireland \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"cheshire \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"btp \",\"crimeType\":\"Vehicle crime\",\"cnt\":1},{\"districtName\":\"btp \",\"crimeType\":\"Possession of weapons\",\"cnt\":1},{\"districtName\":\"avon and somerset \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"dyfed powys \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"cambridgeshire \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"warwickshire \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"kent \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"staffordshire \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"btp \",\"crimeType\":\"Other theft\",\"cnt\":1},{\"districtName\":\"hampshire \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"north wales \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"btp \",\"crimeType\":\"Bicycle theft\",\"cnt\":1},{\"districtName\":\"btp \",\"crimeType\":\"Theft from the person\",\"cnt\":1},{\"districtName\":\"hertfordshire \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"humberside \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"devon and cornwall \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"durham \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"gloucestershire \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"gwent \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"btp \",\"crimeType\":\"Shoplifting\",\"cnt\":1},{\"districtName\":\"essex \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"sussex \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1},{\"districtName\":\"west yorkshire \",\"crimeType\":\"Anti-social behaviour\",\"cnt\":1}]\u001b[1m\u001b[34mlocation\u001b[0m: \u001b[1m\u001b[32mObject\u001b[0m \u003d \"\"\n\u001b[1m\u001b[34mcrimeByLoc\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.DataFrame\u001b[0m \u003d [districtName: string, crimeType: string ... 1 more field]\n\u001b[1m\u001b[34mhigh\u001b[0m: \u001b[1m\u001b[32mString\u001b[0m \u003d [{\"districtName\":\"metropolitan \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":257845},{\"districtName\":\"metropolitan \",\"crimeType\":\"Vehicle crime\",\"cnt\":150164},{\"districtName\":\"metropolitan \",\"crimeType\":\"Other theft\",\"cnt\":149490},{\"districtName\":\"west yorkshire \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":146974},{\"districtName\":\"west midlands \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":122643},{\"districtName\":\"kent \",\"crimeType\":\"Violence and sexual offences\",\"cnt\":100461},{\"districtName\":\"metropolitan \",\"crimeType\":\"Burglary\",\"cnt\":97034},{\"districtNa..."
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://ed62166b77b4:4040/jobs/job?id\u003d29"
+            },
+            {
+              "jobUrl": "http://ed62166b77b4:4040/jobs/job?id\u003d30"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1638628845159_1337379998",
+      "id": "paragraph_1638542437138_1573232430",
+      "dateCreated": "2021-12-04 14:40:45.184",
+      "dateStarted": "2021-12-04 15:53:41.296",
+      "dateFinished": "2021-12-04 15:55:43.745",
+      "status": "FINISHED"
+    },
+    {
+      "text": "%spark\n//number of crimes by crimeType\nval crimeType\u003dz.textbox(\"Crime Type\",\"wea\")\nval highestCTypeJSON\u003dspark.sql(s\"select districtName, crimeType, count(crimeType) cnt from (select distinct districtName,crimeId,crimeType from pcrime where crimeType LIKE \u0027%$crimeType%\u0027 ) group by districtName,crimeType order by cnt desc\")\n//highestCTypeJSON.show()\n\nval high\u003dhighestCTypeJSON.toJSON.collect.mkString(\"[\", \",\" , \"]\" )\nprint(high)",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-04 15:57:44.454",
+      "progress": 51,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {
+          "Crime Type": "wea"
+        },
+        "forms": {
+          "Crime Type": {
+            "type": "TextBox",
+            "name": "Crime Type",
+            "displayName": "Crime Type",
+            "defaultValue": "wea",
+            "hidden": false
+          }
+        }
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "[{\"districtName\":\"metropolitan \",\"crimeType\":\"Possession of weapons\",\"cnt\":7787},{\"districtName\":\"west midlands \",\"crimeType\":\"Possession of weapons\",\"cnt\":3743},{\"districtName\":\"west yorkshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":3015},{\"districtName\":\"sussex \",\"crimeType\":\"Possession of weapons\",\"cnt\":2300},{\"districtName\":\"greater manchester \",\"crimeType\":\"Possession of weapons\",\"cnt\":2115},{\"districtName\":\"south yorkshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":2097},{\"districtName\":\"thames valley \",\"crimeType\":\"Possession of weapons\",\"cnt\":2093},{\"districtName\":\"hampshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":2088},{\"districtName\":\"kent \",\"crimeType\":\"Possession of weapons\",\"cnt\":2027},{\"districtName\":\"essex \",\"crimeType\":\"Possession of weapons\",\"cnt\":1901},{\"districtName\":\"northumbria \",\"crimeType\":\"Possession of weapons\",\"cnt\":1671},{\"districtName\":\"merseyside \",\"crimeType\":\"Possession of weapons\",\"cnt\":1631},{\"districtName\":\"nottinghamshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":1552},{\"districtName\":\"devon and cornwall \",\"crimeType\":\"Possession of weapons\",\"cnt\":1393},{\"districtName\":\"northern ireland \",\"crimeType\":\"Possession of weapons\",\"cnt\":1265},{\"districtName\":\"west mercia \",\"crimeType\":\"Possession of weapons\",\"cnt\":1186},{\"districtName\":\"lancashire \",\"crimeType\":\"Possession of weapons\",\"cnt\":1162},{\"districtName\":\"avon and somerset \",\"crimeType\":\"Possession of weapons\",\"cnt\":1143},{\"districtName\":\"leicestershire \",\"crimeType\":\"Possession of weapons\",\"cnt\":993},{\"districtName\":\"hertfordshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":949},{\"districtName\":\"derbyshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":933},{\"districtName\":\"south wales \",\"crimeType\":\"Possession of weapons\",\"cnt\":896},{\"districtName\":\"staffordshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":889},{\"districtName\":\"cambridgeshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":844},{\"districtName\":\"surrey \",\"crimeType\":\"Possession of weapons\",\"cnt\":830},{\"districtName\":\"norfolk \",\"crimeType\":\"Possession of weapons\",\"cnt\":810},{\"districtName\":\"northamptonshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":776},{\"districtName\":\"lincolnshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":754},{\"districtName\":\"cleveland \",\"crimeType\":\"Possession of weapons\",\"cnt\":714},{\"districtName\":\"suffolk \",\"crimeType\":\"Possession of weapons\",\"cnt\":688},{\"districtName\":\"humberside \",\"crimeType\":\"Possession of weapons\",\"cnt\":615},{\"districtName\":\"warwickshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":576},{\"districtName\":\"bedfordshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":542},{\"districtName\":\"cheshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":532},{\"districtName\":\"wiltshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":495},{\"districtName\":\"north wales \",\"crimeType\":\"Possession of weapons\",\"cnt\":434},{\"districtName\":\"durham \",\"crimeType\":\"Possession of weapons\",\"cnt\":422},{\"districtName\":\"dorset \",\"crimeType\":\"Possession of weapons\",\"cnt\":400},{\"districtName\":\"north yorkshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":394},{\"districtName\":\"gloucestershire \",\"crimeType\":\"Possession of weapons\",\"cnt\":389},{\"districtName\":\"cumbria \",\"crimeType\":\"Possession of weapons\",\"cnt\":336},{\"districtName\":\"gwent \",\"crimeType\":\"Possession of weapons\",\"cnt\":331},{\"districtName\":\"dyfed powys \",\"crimeType\":\"Possession of weapons\",\"cnt\":302},{\"districtName\":\"city of london \",\"crimeType\":\"Possession of weapons\",\"cnt\":89},{\"districtName\":\"btp \",\"crimeType\":\"Possession of weapons\",\"cnt\":1}]\u001b[1m\u001b[34mcrimeType\u001b[0m: \u001b[1m\u001b[32mObject\u001b[0m \u003d wea\n\u001b[1m\u001b[34mhighestCTypeJSON\u001b[0m: \u001b[1m\u001b[32morg.apache.spark.sql.DataFrame\u001b[0m \u003d [districtName: string, crimeType: string ... 1 more field]\n\u001b[1m\u001b[34mhigh\u001b[0m: \u001b[1m\u001b[32mString\u001b[0m \u003d [{\"districtName\":\"metropolitan \",\"crimeType\":\"Possession of weapons\",\"cnt\":7787},{\"districtName\":\"west midlands \",\"crimeType\":\"Possession of weapons\",\"cnt\":3743},{\"districtName\":\"west yorkshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":3015},{\"districtName\":\"sussex \",\"crimeType\":\"Possession of weapons\",\"cnt\":2300},{\"districtName\":\"greater manchester \",\"crimeType\":\"Possession of weapons\",\"cnt\":2115},{\"districtName\":\"south yorkshire \",\"crimeType\":\"Possession of weapons\",\"cnt\":2097},{\"districtName\":\"thames valley \",\"crimeType\":\"Possession of weapons\",\"cnt\":2093},{\"..."
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://ed62166b77b4:4040/jobs/job?id\u003d31"
+            },
+            {
+              "jobUrl": "http://ed62166b77b4:4040/jobs/job?id\u003d32"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1638628845184_1691278649",
+      "id": "paragraph_1638543224701_703065966",
+      "dateCreated": "2021-12-04 14:40:45.184",
+      "dateStarted": "2021-12-04 15:57:44.615",
+      "dateFinished": "2021-12-04 15:58:21.777",
+      "status": "FINISHED"
+    },
+    {
+      "text": "%spark\noutcomes.coalesce(1).write.mode(SaveMode.Overwrite).csv(\"/data/output/crimes-consolidate-2.csv\")",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-04 14:40:47.056",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "scala",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/scala",
+        "fontSize": 9.0,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": []
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1638628847056_525414904",
+      "id": "paragraph_1638532093377_1750940649",
+      "dateCreated": "2021-12-04 14:40:47.056",
+      "status": "READY"
+    }
+  ],
+  "name": "trg-assessment",
+  "id": "2GPY2C1BN",
+  "defaultInterpreterGroup": "spark",
+  "version": "0.9.0",
+  "noteParams": {},
+  "noteForms": {},
+  "angularObjects": {},
+  "config": {
+    "isZeppelinNotebookCronEnable": false
+  },
+  "info": {}
+}
